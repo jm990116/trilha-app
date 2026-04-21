@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TA Governance Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'DM Sans', sans-serif; background: #f7f6f3; }
+  .mono { font-family: 'DM Mono', monospace; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+  .nav-item { display:flex; align-items:center; gap:9px; padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12.5px; border:none; background:none; width:100%; text-align:left; color:#6b6a65; transition:all .15s; }
+  .nav-item:hover { background:#f0efe9; color:#1a1916; }
+  .nav-item.active { background:#EEEDFE; color:#3C3489; font-weight:500; }
+  .section { display:none; }
+  .section.active { display:block; }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .badge { display:inline-block; font-size:10px; font-weight:500; padding:2px 8px; border-radius:20px; white-space:nowrap; }
+  .b-active   { background:#EAF3DE; color:#3B6D11; }
+  .b-migrating{ background:#EEEDFE; color:#3C3489; }
+  .b-legacy   { background:#FAEEDA; color:#854F0B; }
+  .b-sunset   { background:#FCEBEB; color:#A32D2D; }
+  .b-open     { background:#FCEBEB; color:#A32D2D; }
+  .b-progress { background:#FAEEDA; color:#854F0B; }
+  .b-done     { background:#EAF3DE; color:#3B6D11; }
+  .b-canceled { background:#F1EFE8; color:#5F5E5A; }
+  .b-bug      { background:#FCEBEB; color:#A32D2D; }
+  .b-story    { background:#EEEDFE; color:#3C3489; }
+  .detail-row { display:none; }
+  .detail-row.open { display:table-row; }
+  .bar-bg { position:relative; height:5px; background:#e8e7e2; border-radius:3px; overflow:hidden; }
+  .bar-fill { position:absolute; inset-y-0; left:0; height:100%; border-radius:3px; transition:width .4s; }
+  .tool-card { background:#fff; border:0.5px solid rgba(0,0,0,0.08); border-radius:12px; padding:14px; cursor:pointer; transition:border-color .15s; }
+  .tool-card:hover { border-color:rgba(0,0,0,0.15); }
+  .tool-card.expanded { border-color:#7F77DD; }
+  .insight-card { background:#fff; border:0.5px solid rgba(0,0,0,0.08); border-radius:10px; padding:12px 14px; border-left-width:3px; margin-bottom:8px; }
+</style>
+</head>
+<body>
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-56 flex-shrink-0 bg-white border-r border-black/8 fixed inset-y-0 left-0 flex flex-col z-10">
+    <div class="px-5 py-6 border-b border-black/8">
+      <div class="text-[13px] font-semibold tracking-tight">TA Governance</div>
+      <div class="text-[11px] text-gray-400 mt-0.5 mono">Stack Dashboard · Nubank</div>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-0.5">
+      <div class="text-[10px] font-medium text-gray-400 uppercase tracking-wider px-2 mb-2">Navegação</div>
+      <button class="nav-item active" onclick="switchTab('overview',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/></svg>
+        Visão Geral
+      </button>
+      <button class="nav-item" onclick="switchTab('stack',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="2.5" rx="1" fill="currentColor"/><rect x="1" y="7" width="14" height="2.5" rx="1" fill="currentColor" opacity=".6"/><rect x="1" y="11" width="14" height="2.5" rx="1" fill="currentColor" opacity=".3"/></svg>
+        Stack Completo
+      </button>
+      <button class="nav-item" onclick="switchTab('adoption',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 8L8 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 8L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Adoption Rate
+      </button>
+      <button class="nav-item" onclick="switchTab('bugs',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="9" r="5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M6 4.5Q8 3 10 4.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/><line x1="8" y1="7" x2="8" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="6" y1="9" x2="10" y2="9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Bugs & Health
+      </button>
+      <button class="nav-item" onclick="switchTab('insights',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 0 1 4 4c0 1.5-.8 2.8-2 3.5V11a2 2 0 0 1-4 0V9.5A4 4 0 0 1 8 2Z" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="6.5" y1="13" x2="9.5" y2="13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Insights Claude
+      </button>
+    </nav>
+    <div class="px-5 py-4 border-t border-black/8">
+      <div class="text-[10px] text-gray-400 mono leading-relaxed">Abr/2026 · TA Ops<br>Revisão mensal</div>
+      <div class="flex items-center gap-1.5 mt-2" id="claude-badge" style="display:none!important">
+        <div class="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+        <span class="text-[10px] text-gray-400 mono">Claude claude-sonnet-4-6</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="ml-56 flex-1 p-8" style="max-width:calc(100vw - 224px)">
+    <div class="flex items-center justify-between mb-7">
+      <h1 class="text-xl font-semibold tracking-tight" id="page-title">Visão Geral</h1>
+      <div class="flex items-center gap-3">
+        <span class="text-[11px] text-gray-400 mono" id="last-updated">—</span>
+        <button onclick="refreshData()" id="refresh-btn"
+          class="text-[11px] px-3 py-1.5 rounded-md border border-black/15 text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-1.5">
+          <svg id="refresh-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M10 6A4 4 0 1 1 6 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <path d="M10 2v4H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          Atualizar
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading" class="flex flex-col items-center justify-center py-24 gap-4">
+      <div class="w-8 h-8 border-2 border-purple-200 border-t-purple-500 rounded-full spin"></div>
+      <span class="text-[12px] text-gray-400">Buscando dados do Jira e Visier...</span>
+    </div>
+
+    <!-- Error -->
+    <div id="error-box" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-[12px] text-red-700 mb-4"></div>
+
+    <!-- Content -->
+    <div id="content" class="hidden">
+
+      <!-- ── VISÃO GERAL ── -->
+      <div id="tab-overview" class="section active">
+        <div class="grid grid-cols-4 gap-3 mb-6" id="kpi-overview"></div>
+        <div class="bg-white border border-black/8 rounded-xl overflow-hidden mb-4">
+          <div class="bg-gray-50 border-b border-black/8 px-4 py-2 flex justify-between">
+            <span class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Calendário de renovações</span>
+            <span class="text-[10px] text-gray-400 mono">Abr – Set 2026</span>
+          </div>
+          <div class="flex p-4" id="renewal-timeline"></div>
+        </div>
+        <div class="bg-white border border-black/8 rounded-xl overflow-hidden mb-4">
+          <div class="bg-gray-50 border-b border-black/8 px-4 py-2">
+            <span class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Alertas & ações pendentes</span>
+          </div>
+          <div id="actions-table"></div>
+        </div>
+        <div class="flex gap-3 flex-wrap mt-2" id="sources-bar"></div>
+      </div>
+
+      <!-- ── STACK ── -->
+      <div id="tab-stack" class="section">
+        <div class="flex gap-2 mb-3 flex-wrap text-[11px] text-gray-500 items-center" id="stack-legend"></div>
+        <div class="flex gap-2 mb-3 flex-wrap" id="stack-filters"></div>
+        <div class="bg-white border border-black/8 rounded-xl overflow-hidden">
+          <table class="w-full text-[12px]" style="table-layout:fixed">
+            <thead id="stack-thead"></thead>
+            <tbody id="stack-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── ADOPTION ── -->
+      <div id="tab-adoption" class="section">
+        <div class="bg-teal-50 border-l-4 rounded-md px-3 py-2 text-[11px] mb-4 flex items-center gap-2"
+          style="background:#E1F5EE;border-color:#1D9E75;color:#085041">
+          <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:#1D9E75"></div>
+          Headcount: <strong class="ml-1">Visier · Abr/2026</strong>
+          <span class="ml-1">· Total org: 10.544 · Elegibilidade estimada</span>
+        </div>
+        <div class="grid grid-cols-4 gap-3 mb-6" id="kpi-adoption"></div>
+        <div class="flex gap-2 mb-4 flex-wrap items-center" id="adoption-filters"></div>
+        <div class="grid grid-cols-3 gap-3" id="adoption-cards"></div>
+      </div>
+
+      <!-- ── BUGS ── -->
+      <div id="tab-bugs" class="section">
+        <div class="bg-purple-50 border-l-4 rounded-md px-3 py-2 text-[11px] mb-4 flex items-center gap-2"
+          style="background:#EEEDFE;border-color:#7F77DD;color:#3C3489">
+          <div class="w-2 h-2 rounded-full flex-shrink-0 bg-purple-400"></div>
+          Dados reais: <strong class="ml-1">TAOPS · Jira</strong>
+          <span class="ml-1" id="bugs-source-status">· carregando...</span>
+        </div>
+        <div class="grid grid-cols-4 gap-3 mb-6" id="kpi-bugs"></div>
+        <div class="flex gap-2 mb-4 flex-wrap items-center" id="bugs-filters"></div>
+        <div class="grid grid-cols-3 gap-3 mb-4" id="bugs-cards"></div>
+        <div class="bg-white border border-black/8 rounded-xl overflow-hidden">
+          <div class="bg-gray-50 border-b border-black/8 px-4 py-2">
+            <span class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Todos os issues · TAOPS Jira</span>
+          </div>
+          <table class="w-full text-[12px]" style="table-layout:fixed">
+            <thead><tr class="bg-gray-50 border-b border-black/8 text-[11px] text-gray-400">
+              <th class="px-4 py-2 text-left w-[10%]">Ticket</th>
+              <th class="px-4 py-2 text-left w-[13%]">Ferramenta</th>
+              <th class="px-4 py-2 text-left w-[35%]">Título</th>
+              <th class="px-4 py-2 text-left w-[9%]">Tipo</th>
+              <th class="px-4 py-2 text-left w-[11%]">Status</th>
+              <th class="px-4 py-2 text-left w-[9%]">Prioridade</th>
+              <th class="px-4 py-2 text-left w-[13%]">Atribuído</th>
+            </tr></thead>
+            <tbody id="issues-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── INSIGHTS CLAUDE ── -->
+      <div id="tab-insights" class="section">
+        <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="flex-shrink-0 mt-0.5"><circle cx="10" cy="10" r="8" fill="#EEEDFE"/><path d="M10 6v4l2.5 2.5" stroke="#7F77DD" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div>
+            <div class="text-[13px] font-medium text-purple-800 mb-0.5">Insights gerados pelo Claude claude-sonnet-4-6</div>
+            <div class="text-[12px] text-purple-600">Análise do stack atual com foco em custo operacional, licenças ociosas e riscos críticos. Clique em "Gerar insights" para buscar uma análise atualizada.</div>
+          </div>
+        </div>
+        <div class="flex gap-3 mb-6">
+          <button onclick="loadInsights('stack')" class="px-4 py-2 text-[12px] bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Gerar insights do stack
+          </button>
+          <button onclick="loadInsights('custos')" class="px-4 py-2 text-[12px] border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors">
+            Foco em custos
+          </button>
+          <button onclick="loadInsights('riscos')" class="px-4 py-2 text-[12px] border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors">
+            Foco em riscos
+          </button>
+          <button onclick="loadInsights('renovacoes')" class="px-4 py-2 text-[12px] border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors">
+            Foco em renovações
+          </button>
+        </div>
+        <div id="insights-loading" class="hidden flex-col items-center py-10 gap-3">
+          <div class="w-7 h-7 border-2 border-purple-200 border-t-purple-500 rounded-full spin"></div>
+          <span class="text-[12px] text-gray-400">Claude está analisando o stack...</span>
+        </div>
+        <div id="insights-content"></div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────
+var D = null  // dashboard data
+var stackFilter   = 'all'
+var adoptFilter   = 'all'
+var adoptSort     = 'pen'
+var bugsFilter    = 'all'
+var bugsSort      = 'open'
+var expandedStack = {}
+var expandedAdopt = {}
+var expandedBugs  = {}
+
+var TITLES = {
+  overview: 'Visão geral', stack: 'Stack completo', adoption: 'Adoption rate',
+  owners: 'Responsáveis', bugs: 'Bugs & health', insights: 'Insights Claude'
+}
+
+// ── Init ─────────────────────────────────────────────────────────────
+// Apps Script: use google.script.run para chamar funções do servidor.
+// fetch() para a mesma URL sempre retorna o HTML da página, não JSON.
+
+window.onload = function() { loadData(false) }
+
+function loadData(forceRefresh) {
+  show('loading'); hide('content'); hide('error-box')
+  if (forceRefresh) {
+    google.script.run
+      .withSuccessHandler(function() {
+        google.script.run
+          .withSuccessHandler(onDataLoaded)
+          .withFailureHandler(onDataError)
+          .getDashboardData()
+      })
+      .withFailureHandler(onDataError)
+      .clearCache()
+    return
+  }
+  google.script.run
+    .withSuccessHandler(onDataLoaded)
+    .withFailureHandler(onDataError)
+    .getDashboardData()
+}
+
+function onDataLoaded(data) {
+  D = data
+  hide('loading')
+  show('content')
+  renderAll()
+}
+
+function onDataError(e) {
+  hide('loading')
+  el('error-box').textContent = 'Erro ao carregar dados: ' + (e.message || e)
+  show('error-box')
+}
+
+function refreshData() {
+  var icon = el('refresh-icon')
+  icon.classList.add('spin')
+  google.script.run
+    .withSuccessHandler(function() {
+      google.script.run
+        .withSuccessHandler(function(data) { D = data; renderAll(); icon.classList.remove('spin') })
+        .withFailureHandler(function(e) { icon.classList.remove('spin'); alert('Erro: ' + (e.message || e)) })
+        .getDashboardData()
+    })
+    .withFailureHandler(function(e) { icon.classList.remove('spin'); alert('Erro ao limpar cache: ' + (e.message || e)) })
+    .clearCache()
+}
+
+// ── Render all ───────────────────────────────────────────────────────
+function renderAll() {
+  renderOverview()
+  renderStack()
+  renderAdoption()
+  renderBugs()
+  var ts = D.lastUpdated ? new Date(D.lastUpdated).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : '—'
+  el('last-updated').textContent = (D._cached ? 'cache · ' : 'live · ') + ts
+}
+
+// ── Overview ─────────────────────────────────────────────────────────
+function renderOverview() {
+  var tools  = D.stackTools || []
+  var issues = D.jiraIssues || []
+  var soon   = tools.filter(function(t) {
+    if (!t.renewal || t.renewal === '—') return false
+    var m = t.renewal.match(/(\w+)\/(\d{4})/)
+    if (!m) return false
+    var mm = {Jan:0,Fev:1,Mar:2,Abr:3,Mai:4,Jun:5,Jul:6,Ago:7,Set:8,Out:9,Nov:10,Dez:11}
+    var d = new Date(+m[2], mm[m[1]] || 0)
+    var diff = (d - Date.now()) / 86400000
+    return diff > 0 && diff <= 90
+  }).length
+
+  var open = issues.filter(function(i) { return i.statusCat === 'progress' || i.statusCat === 'open' }).length
+
+  el('kpi-overview').innerHTML =
+    kpi(tools.length, 'Ferramentas na stack', '5 ativas · 3 legado/sunset', '') +
+    kpi(soon, 'Renovações < 90 dias', 'GoodTime · LinkedIn · HackerRank', 'text-amber-600') +
+    kpi(tools.filter(function(t){return t.risk==='high'}).length, 'Risco alto', 'Greenhouse (decommission)', 'text-red-600') +
+    kpi(open, 'Issues abertos', 'TAOPS · Jira em tempo real', 'text-purple-600')
+
+  // Timeline
+  var months = ['Abr','Mai','Jun','Jul','Ago','Set']
+  var renewals = {
+    Mai: [['GoodTime','#FAEEDA','#854F0B']],
+    Jun: [['LinkedIn','#FAEEDA','#854F0B']],
+    Jul: [['BrightHire','#EAF3DE','#3B6D11']],
+    Ago: [['HackerRank','#FAEEDA','#854F0B']],
+    Set: [['Ashby','#EAF3DE','#3B6D11'],['CodeSignal','#EAF3DE','#3B6D11']]
+  }
+  el('renewal-timeline').innerHTML = months.map(function(m) {
+    var pills = (renewals[m] || []).map(function(r) {
+      return '<span style="background:'+r[1]+';color:'+r[2]+';font-size:9px;font-weight:500;padding:2px 6px;border-radius:3px;text-align:center;display:block;margin-bottom:2px">'+r[0]+'</span>'
+    }).join('')
+    return '<div style="flex:1"><div style="font-size:10px;color:#9b9a95;text-align:center;margin-bottom:6px;font-family:monospace">'+m+'</div><div style="min-height:24px">'+pills+'</div></div>'
+  }).join('')
+
+  // Actions table
+  var actions = [
+    ['Greenhouse',    'Exportar multi-selects antes do decommission',        'Jhow',          'urgente',  'b-sunset'],
+    ['GoodTime',      'Avaliar redução de licenças antes de Mai/26',          'Jhow',          'médio',    'b-legacy'],
+    ['HackerRank',    'Mapear sobreposição com CodeSignal antes de Ago/26',   'Jhow / Rafael', 'médio',    'b-legacy'],
+    ['LinkedIn Rec.', 'Auditar licenças ativas x utilizadas antes de Jun/26', 'Aline / Marco', 'médio',    'b-legacy'],
+    ['Google Forms',  'Concluir migração D&I e CNPS (TAOPS-848, 849)',        'Jhow',          'em curso', 'b-migrating']
+  ]
+  el('actions-table').innerHTML = '<table class="w-full text-xs" style="table-layout:fixed"><thead><tr class="bg-gray-50 border-b border-black/8 text-gray-400"><th class="px-4 py-2 text-left w-2/12">Ferramenta</th><th class="px-4 py-2 text-left w-5/12">Ação</th><th class="px-4 py-2 text-left w-2/12">Responsável</th><th class="px-4 py-2 text-left w-2/12">Prioridade</th></tr></thead><tbody>' +
+    actions.map(function(a) {
+      return '<tr class="border-b border-black/5 last:border-0"><td class="px-4 py-2.5 font-medium">'+a[0]+'</td><td class="px-4 py-2.5 text-gray-500">'+a[1]+'</td><td class="px-4 py-2.5 text-gray-500">'+a[2]+'</td><td class="px-4 py-2.5"><span class="badge '+a[4]+'">'+a[3]+'</span></td></tr>'
+    }).join('') + '</tbody></table>'
+
+  // Sources
+  el('sources-bar').innerHTML = (D.sources || []).map(function(s) {
+    var dot = s.status === 'live' ? 'bg-green-500' : s.status === 'mock' || s.status === 'snapshot' ? 'bg-amber-400' : 'bg-red-400'
+    return '<div class="flex items-center gap-1.5 text-[10px] text-gray-400 mono"><div class="w-1.5 h-1.5 rounded-full '+dot+'"></div>'+s.name+' <span class="opacity-50">'+s.status+'</span></div>'
+  }).join('')
+}
+
+// ── Stack ─────────────────────────────────────────────────────────────
+function renderStack() {
+  var tools = (D.stackTools || []).filter(function(t) {
+    if (stackFilter === 'all')  return true
+    if (stackFilter === 'high') return t.risk === 'high'
+    return t.status === stackFilter
+  })
+
+  el('stack-legend').innerHTML =
+    [['ativa','b-active','Stack definitivo'],['migrando','b-migrating','Em transição'],
+     ['legado','b-legacy','Deprecação prevista'],['sunset','b-sunset','A descomissionar']]
+    .map(function(l) { return '<span class="flex items-center gap-1.5"><span class="badge '+l[1]+'">'+l[0]+'</span>'+l[2]+'</span>' }).join('')
+
+  el('stack-filters').innerHTML =
+    [['all','Todas'],['ativa','Ativas'],['migrando','Migrando'],
+     ['legado','Legado'],['sunset','Sunset'],['high','Risco alto']]
+    .map(function(f) {
+      var active = stackFilter === f[0]
+      return '<button onclick="setStackFilter(\''+f[0]+'\')" class="text-[11px] px-3 py-1 rounded-md border transition-all '+
+        (active ? 'bg-gray-100 text-gray-900 border-gray-300 font-medium' : 'bg-transparent text-gray-500 border-gray-200 hover:bg-gray-50')+'">'+f[1]+'</button>'
+    }).join('')
+
+  var RISK = { low: ['#639922','Baixo'], mid: ['#BA7517','Médio'], high: ['#E24B4A','Alto'] }
+  var STATUS = { ativa:'b-active', migrando:'b-migrating', legado:'b-legacy', sunset:'b-sunset' }
+
+  var rows = tools.map(function(t, idx) {
+    var exp = expandedStack[t.name]
+    var rc  = RISK[t.risk] || ['#888780','—']
+    var row = '<tr class="border-b border-black/5 cursor-pointer hover:bg-gray-50" onclick="toggleStackRow(\''+t.name+'\')">' +
+      '<td class="px-4 py-2.5 font-medium">'+t.name+'</td>' +
+      '<td class="px-4 py-2.5 text-gray-500">'+t.cat+'</td>' +
+      '<td class="px-4 py-2.5"><span class="badge '+(STATUS[t.status]||'')+'">'+t.status+'</span></td>' +
+      '<td class="px-4 py-2.5 text-gray-500">'+t.owner+'</td>' +
+      '<td class="px-4 py-2.5 text-gray-500 text-center">'+t.users+'/'+t.licensed+'</td>' +
+      '<td class="px-4 py-2.5 text-gray-500">'+t.cost+'</td>' +
+      '<td class="px-4 py-2.5 text-gray-500">'+t.renewal+'</td>' +
+      '<td class="px-4 py-2.5"><span style="color:'+rc[0]+';display:flex;align-items:center;gap:5px;font-size:11px"><span style="width:7px;height:7px;border-radius:50%;background:'+rc[0]+';display:inline-block"></span>'+rc[1]+'</span></td>' +
+      '<td class="px-4 py-2.5 text-gray-400 text-[11px] text-center">'+(exp?'▲':'▾')+'</td>' +
+      '</tr>'
+    var detail = exp ? '<tr class="border-b border-black/5"><td colspan="9" style="padding:0"><div style="padding:12px 16px;background:#faf9f7;border-left:3px solid #7F77DD;font-size:12px;color:#6b6a65;line-height:1.6">' +
+      t.notes +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px">' +
+      '<div><div style="font-size:10px;color:#9b9a95">Dono de contrato</div><div style="font-weight:500;color:#1a1916">'+t.contract+'</div></div>' +
+      '<div><div style="font-size:10px;color:#9b9a95">Licenças</div><div style="font-weight:500;color:#1a1916">'+t.licensed+' contratadas · '+t.users+' ativas</div></div>' +
+      '<div><div style="font-size:10px;color:#9b9a95">Aviso prévio</div><div style="font-weight:500;color:#1a1916">'+t.notice+' dias</div></div>' +
+      '<div><div style="font-size:10px;color:#9b9a95">Deprecation</div><div style="font-weight:500;color:#1a1916">'+t.depTarget+'</div></div>' +
+      '</div></div></td></tr>' : ''
+    return row + detail
+  }).join('')
+
+  el('stack-thead').innerHTML = '<tr class="bg-gray-50 border-b border-black/8 text-[11px] text-gray-400">' +
+    ['Ferramenta|15%','Categoria|12%','Status|11%','Responsável|12%','Usuários|9%','Custo/mês|12%','Renovação|12%','Risco|10%','|7%']
+    .map(function(c){ var p=c.split('|'); return '<th class="px-4 py-2 text-left" style="width:'+p[1]+'">'+p[0]+'</th>' }).join('') + '</tr>'
+  el('stack-tbody').innerHTML = rows
+}
+
+function setStackFilter(f) { stackFilter = f; renderStack() }
+function toggleStackRow(name) { expandedStack[name] = !expandedStack[name]; renderStack() }
+
+// ── Adoption ──────────────────────────────────────────────────────────
+function renderAdoption() {
+  var tools = D.adoptionData || []
+
+  function p(a, b) { return b > 0 ? Math.round(a * 100 / b) : 0 }
+  function c(v) { return v >= 80 ? '#639922' : v >= 60 ? '#BA7517' : '#E24B4A' }
+  function l(v) { return v >= 80 ? 'Alta' : v >= 60 ? 'Média' : 'Baixa' }
+  function bc(v) { return v >= 80 ? 'b-active' : v >= 60 ? 'b-legacy' : 'b-sunset' }
+
+  var enriched = tools.map(function(t) {
+    return Object.assign({}, t, {
+      penPct: p(t.active, t.eligibleOrg),
+      licPct: t.licensed > 0 ? p(t.active, t.licensed) : null,
+      gap: t.eligibleOrg - t.active,
+      waste: t.licensed - t.active
+    })
+  })
+
+  var m   = enriched.filter(function(t) { return t.eligibleOrg > 0 })
+  var avg = m.length ? Math.round(m.reduce(function(s,t){return s+t.penPct},0)/m.length) : 0
+  var lm  = enriched.filter(function(t){ return t.licensed > 0 })
+  var al  = lm.length ? Math.round(lm.reduce(function(s,t){return s+(t.licPct||0)},0)/lm.length) : 0
+  var mg  = Math.max.apply(null, enriched.map(function(t){return t.gap}))
+  var tw  = enriched.reduce(function(s,t){return s+Math.max(0,t.waste)},0)
+
+  el('kpi-adoption').innerHTML =
+    kpi(avg+'%','Adoção média na org','Ativos / elegíveis reais','text-purple-600') +
+    kpi(al+'%','Eficiência de licença','Ativos / licenças pagas','text-purple-600') +
+    kpi(mg,'Maior gap de cobertura','Elegíveis sem acesso','text-red-600') +
+    kpi(tw,'Licenças ociosas','Pagas, não utilizadas','text-amber-600')
+
+  el('adoption-filters').innerHTML =
+    [['all','Todas'],['alta','Alta'],['media','Média'],['baixa','Baixa']].map(function(f) {
+      return fbtn(f[1], adoptFilter === f[0], 'setAdoptFilter(\''+f[0]+'\')')
+    }).join('') + '<span class="text-[11px] text-gray-400 ml-2">Ordenar:</span>' +
+    [['pen','Adoção'],['lic','Licença'],['gap','Gap']].map(function(f) {
+      return fbtn(f[1], adoptSort === f[0], 'setAdoptSort(\''+f[0]+'\')')
+    }).join('')
+
+  var list = enriched.filter(function(t) {
+    if (adoptFilter === 'alta')  return t.penPct >= 80
+    if (adoptFilter === 'media') return t.penPct >= 60 && t.penPct < 80
+    if (adoptFilter === 'baixa') return t.penPct < 60
+    return true
+  }).sort(function(a,b) {
+    if (adoptSort === 'pen') return b.penPct - a.penPct
+    if (adoptSort === 'lic') return (b.licPct||0) - (a.licPct||0)
+    return b.gap - a.gap
+  })
+
+  el('adoption-cards').innerHTML = list.map(function(t) {
+    var col = c(t.penPct), lbl = l(t.penPct), bcls = bc(t.penPct)
+    var exp = expandedAdopt[t.name]
+    var ring = healthRing(t.penPct, col)
+
+    var chRows = exp ? (t.chapterData || []).slice(0,6).map(function(ch) {
+      var cp = p(ch.active, ch.eligible), cc = c(cp)
+      var ew = p(ch.eligible, t.eligibleOrg), aw = p(ch.active, t.eligibleOrg)
+      return '<div style="display:grid;grid-template-columns:110px 1fr 50px;gap:6px;align-items:center;margin-bottom:5px">' +
+        '<div style="font-size:11px;color:#6b6a65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ch.ch+'</div>' +
+        '<div style="position:relative;height:10px"><div style="position:absolute;inset:0;background:#e8e7e2;border-radius:3px"></div>' +
+        '<div style="position:absolute;top:2.5px;left:0;height:5px;border-radius:3px;background:'+cc+';opacity:.25;width:'+ew+'%"></div>' +
+        '<div style="position:absolute;top:2.5px;left:0;height:5px;border-radius:3px;background:'+cc+';width:'+aw+'%"></div></div>' +
+        '<div style="font-size:10px;font-weight:500;text-align:right;color:'+cc+'">'+cp+'%</div></div>'
+    }).join('') : ''
+
+    return '<div class="tool-card'+(exp?' expanded':'')+'" onclick="toggleAdoptCard(\''+t.name+'\')">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">' +
+        '<div><div style="font-size:13px;font-weight:500">'+t.name+'</div><div style="font-size:10px;color:#9b9a95;margin-top:2px;font-family:monospace">'+t.cat+'</div></div>' +
+        ring +
+      '</div>' +
+      '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap"><span class="badge '+bcls+'">'+lbl+'</span>' +
+        (t.gap > 0 ? '<span style="font-size:10px;color:#9b9a95">'+t.gap+' elegíveis sem acesso</span>' : '') +
+        (t.waste > 0 ? '<span style="font-size:10px;color:#BA7517">'+t.waste+' lic. ociosa'+(t.waste>1?'s':'')+'</span>' : '') +
+      '</div>' +
+      '<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span style="color:#6b6a65">Adoção na org</span><span style="font-weight:500;color:'+col+'">'+t.active+'/'+t.eligibleOrg+' ('+t.penPct+'%)</span></div><div class="bar-bg"><div class="bar-fill" style="background:'+col+';width:'+t.penPct+'%"></div></div></div>' +
+      (t.licPct !== null ? '<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span style="color:#6b6a65">Eficiência de licença</span><span style="font-weight:500;color:'+c(t.licPct)+'">'+t.active+'/'+t.licensed+' ('+t.licPct+'%)</span></div><div class="bar-bg"><div class="bar-fill" style="background:'+c(t.licPct)+';width:'+t.licPct+'%"></div></div></div>' : '') +
+      '<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:#6b6a65">Logins 30d</span><span style="font-weight:500">'+t.logins30d+' usuários</span></div>' +
+      (exp ? '<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid rgba(0,0,0,0.07)"><div style="font-size:10px;font-weight:500;color:#9b9a95;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Por chapter · Visier</div>'+chRows+'</div>' : '') +
+      '<div style="font-size:10px;color:#7F77DD;text-align:center;margin-top:8px">'+(exp?'▲ fechar':'▼ ver por chapter')+'</div>' +
+    '</div>'
+  }).join('')
+}
+
+function setAdoptFilter(f) { adoptFilter = f; renderAdoption() }
+function setAdoptSort(s)   { adoptSort   = s; renderAdoption() }
+function toggleAdoptCard(n){ expandedAdopt[n] = !expandedAdopt[n]; renderAdoption() }
+
+// ── Owners ────────────────────────────────────────────────────────────
+function renderOwners() {
+  var members = D.teamMembers || []
+  el('owners-grid').innerHTML = members.map(function(m) {
+    var ini = m.name.split(' ').slice(0,2).map(function(w){return w[0]}).join('').toUpperCase()
+    return '<div style="background:#f0efe9;border-radius:8px;padding:12px 14px">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
+        '<div style="width:32px;height:32px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#3C3489;flex-shrink:0">'+ini+'</div>' +
+        '<div><div style="font-size:12px;font-weight:500">'+m.name+'</div><div style="font-size:10px;color:#9b9a95;font-family:monospace">'+m.role+' · '+m.scope+'</div></div>' +
+      '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:4px">'+m.tools.map(function(t){ return '<span style="font-size:9px;background:#fff;border:0.5px solid rgba(0,0,0,0.08);border-radius:3px;padding:2px 6px;color:#6b6a65">'+t+'</span>' }).join('')+'</div>' +
+    '</div>'
+  }).join('')
+
+  el('owners-tbody').innerHTML = members.map(function(m) {
+    return '<tr class="border-b border-black/5 last:border-0">' +
+      '<td class="px-4 py-2.5 font-medium">'+m.name.split(' ')[0]+'</td>' +
+      '<td class="px-4 py-2.5 text-gray-400 mono text-[11px]">'+m.role+'</td>' +
+      '<td class="px-4 py-2.5">'+m.tools.map(function(t){ return '<span class="badge b-active" style="margin:1px 2px">'+t+'</span>' }).join('')+'</td>' +
+      '<td class="px-4 py-2.5 text-gray-500 text-[11px]">'+m.scope+'</td>' +
+    '</tr>'
+  }).join('')
+}
+
+// ── Bugs ─────────────────────────────────────────────────────────────
+var STACK_NAMES = ['Ashby','Greenhouse','GoodTime','BrightHire','CodeSignal','LinkedIn Rec.','HackerRank','DocuSign','Google Forms']
+
+function renderBugs() {
+  var issues = D.jiraIssues || []
+  var liveSource = (D.sources || []).find(function(s){ return s.name === 'Jira TAOPS' })
+  el('bugs-source-status').textContent = liveSource ? '· ' + liveSource.status + ' · Abr/2026' : '· estimado'
+
+  var toolData = STACK_NAMES.map(function(name) {
+    var ti  = issues.filter(function(i){ return i.tool === name })
+    var op  = ti.filter(function(i){ return i.statusCat === 'open' }).length
+    var pr  = ti.filter(function(i){ return i.statusCat === 'progress' }).length
+    var dn  = ti.filter(function(i){ return i.statusCat === 'done' || i.statusCat === 'canceled' }).length
+    var bg  = ti.filter(function(i){ return i.type === 'Bug' }).length
+    var h   = op>1||pr>2 ? 30 : op===1||pr===1 ? 65 : ti.length>0 ? 85 : 100
+    return { name:name, issues:ti, open:op, progress:pr, done:dn, bugs:bg, total:ti.length, health:h }
+  })
+
+  el('kpi-bugs').innerHTML =
+    kpi(toolData.reduce(function(s,t){return s+t.open},0), 'Issues abertos', 'In Progress / Discovery', 'text-red-600') +
+    kpi(toolData.reduce(function(s,t){return s+t.progress},0), 'Em andamento', 'Discovery / Assigned', 'text-amber-600') +
+    kpi(toolData.reduce(function(s,t){return s+t.done},0), 'Resolvidos (90d)', 'Done ou Canceled', 'text-green-600') +
+    kpi(toolData.reduce(function(s,t){return s+t.bugs},0), 'Bugs formais', 'Issue type = Bug', 'text-purple-600')
+
+  el('bugs-filters').innerHTML =
+    [['all','Todas'],['open','Com issues abertos'],['clean','Sem issues']].map(function(f){
+      return fbtn(f[1], bugsFilter===f[0], 'setBugsFilter(\''+f[0]+'\')')
+    }).join('') + '<span class="text-[11px] text-gray-400 ml-2">Ordenar:</span>' +
+    [['open','Abertos'],['total','Total'],['name','Nome']].map(function(f){
+      return fbtn(f[1], bugsSort===f[0], 'setBugsSort(\''+f[0]+'\')')
+    }).join('')
+
+  var list = toolData.filter(function(t) {
+    if (bugsFilter === 'open')  return t.open > 0 || t.progress > 0
+    if (bugsFilter === 'clean') return t.open === 0 && t.progress === 0
+    return true
+  }).sort(function(a,b) {
+    if (bugsSort === 'open')  return (b.open+b.progress) - (a.open+a.progress)
+    if (bugsSort === 'total') return b.total - a.total
+    return a.name.localeCompare(b.name)
+  })
+
+  var STATUS_LBL = { open:'Aberto', progress:'Em andamento', done:'Resolvido', canceled:'Cancelado' }
+  var STATUS_CLS = { open:'b-open', progress:'b-progress', done:'b-done', canceled:'b-canceled' }
+  var TYPE_CLS   = { Bug:'b-bug', Story:'b-story', Task:'b-active', Request:'b-canceled' }
+
+  el('bugs-cards').innerHTML = list.map(function(t) {
+    var hc  = t.health >= 85 ? '#639922' : t.health >= 60 ? '#BA7517' : '#E24B4A'
+    var hlb = t.health >= 85 ? 'Saudável' : t.health >= 60 ? 'Atenção' : 'Crítico'
+    var exp = expandedBugs[t.name]
+    var ring = healthRing(t.health, hc)
+
+    var rows = t.issues.length === 0
+      ? '<div style="font-size:11px;color:#9b9a95;text-align:center;padding:8px 0">Nenhum issue no TAOPS</div>'
+      : t.issues.map(function(i) {
+          return '<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:0.5px solid rgba(0,0,0,0.06)">' +
+            '<a href="'+i.url+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:#7F77DD;font-family:monospace;white-space:nowrap;min-width:84px;text-decoration:none">'+i.key+'</a>' +
+            '<div style="font-size:11px;flex:1;line-height:1.4">'+i.summary+'</div>' +
+            '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">' +
+              '<span class="badge '+(STATUS_CLS[i.statusCat]||'b-canceled')+'">'+( STATUS_LBL[i.statusCat]||i.status)+'</span>' +
+              '<span class="badge '+(TYPE_CLS[i.type]||'b-canceled')+'">'+i.type+'</span>' +
+            '</div>' +
+          '</div>'
+        }).join('')
+
+    return '<div class="tool-card'+(exp?' expanded':'')+'" onclick="toggleBugCard(\''+t.name+'\')">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">' +
+        '<div><div style="font-size:13px;font-weight:500">'+t.name+'</div><div style="font-size:10px;margin-top:2px;font-weight:500;color:'+hc+'">Health: '+hlb+'</div></div>' +
+        ring +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">' +
+        '<div style="background:#f0efe9;border-radius:6px;padding:6px 8px;text-align:center"><div style="font-size:16px;font-weight:600;color:#E24B4A">'+(t.open+t.progress)+'</div><div style="font-size:9px;color:#9b9a95;margin-top:1px">Abertos</div></div>' +
+        '<div style="background:#f0efe9;border-radius:6px;padding:6px 8px;text-align:center"><div style="font-size:16px;font-weight:600;color:#639922">'+t.done+'</div><div style="font-size:9px;color:#9b9a95;margin-top:1px">Resolvidos</div></div>' +
+        '<div style="background:#f0efe9;border-radius:6px;padding:6px 8px;text-align:center"><div style="font-size:16px;font-weight:600;color:#A32D2D">'+t.bugs+'</div><div style="font-size:9px;color:#9b9a95;margin-top:1px">Bugs</div></div>' +
+      '</div>' +
+      (exp ? '<div style="padding-top:8px;border-top:0.5px solid rgba(0,0,0,0.07)"><div style="font-size:10px;font-weight:500;color:#9b9a95;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Issues TAOPS</div>'+rows+'</div>' : '') +
+      '<div style="font-size:10px;color:#7F77DD;text-align:center;margin-top:8px">'+(exp?'▲ fechar':'▼ ver issues')+'</div>' +
+    '</div>'
+  }).join('')
+
+  el('issues-tbody').innerHTML = issues.map(function(i) {
+    var pc = i.priority==='High' ? '#A32D2D' : i.priority==='Low' ? '#3B6D11' : '#BA7517'
+    return '<tr class="border-b border-black/5 last:border-0">' +
+      '<td class="px-4 py-2.5"><a href="'+i.url+'" target="_blank" style="color:#7F77DD;font-family:monospace;font-size:11px;text-decoration:none">'+i.key+'</a></td>' +
+      '<td class="px-4 py-2.5 font-medium">'+i.tool+'</td>' +
+      '<td class="px-4 py-2.5 text-gray-500 text-[11px]">'+i.summary+'</td>' +
+      '<td class="px-4 py-2.5"><span class="badge '+(TYPE_CLS[i.type]||'b-canceled')+'">'+i.type+'</span></td>' +
+      '<td class="px-4 py-2.5"><span class="badge '+(STATUS_CLS[i.statusCat]||'b-canceled')+'">'+(STATUS_LBL[i.statusCat]||i.status)+'</span></td>' +
+      '<td class="px-4 py-2.5 text-[11px] font-medium" style="color:'+pc+'">'+i.priority+'</td>' +
+      '<td class="px-4 py-2.5 text-gray-500">'+i.assignee+'</td>' +
+    '</tr>'
+  }).join('')
+}
+
+function setBugsFilter(f) { bugsFilter = f; renderBugs() }
+function setBugsSort(s)   { bugsSort   = s; renderBugs() }
+function toggleBugCard(n) { expandedBugs[n] = !expandedBugs[n]; renderBugs() }
+
+// ── Claude Insights ───────────────────────────────────────────────────
+function loadInsights(context) {
+  show('insights-loading')
+  el('insights-content').innerHTML = ''
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hide('insights-loading')
+      if (data.error) {
+        el('insights-content').innerHTML = '<div class="bg-red-50 border border-red-200 rounded-xl p-4 text-[12px] text-red-700">'+data.error+'</div>'
+        return
+      }
+      var urgColors = { high: '#E24B4A', mid: '#BA7517', low: '#639922' }
+      el('insights-content').innerHTML = (data.insights || []).map(function(ins) {
+        var uc = urgColors[ins.urgency] || '#888780'
+        return '<div class="insight-card" style="border-left-color:'+uc+'">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+            '<div style="font-size:12px;font-weight:500">'+ins.title+'</div>' +
+            (ins.tool ? '<span class="badge b-migrating" style="font-size:9px">'+ins.tool+'</span>' : '') +
+            '<span style="font-size:10px;font-weight:500;color:'+uc+';margin-left:auto">'+ins.urgency+'</span>' +
+          '</div>' +
+          '<div style="font-size:12px;color:#6b6a65;line-height:1.6">'+ins.desc+'</div>' +
+        '</div>'
+      }).join('') || '<div class="text-[12px] text-gray-400 text-center py-6">Nenhum insight gerado.</div>'
+      el('claude-badge').style.removeProperty('display')
+    })
+    .withFailureHandler(function(e) {
+      hide('insights-loading')
+      el('insights-content').innerHTML = '<div class="bg-red-50 border border-red-200 rounded-xl p-4 text-[12px] text-red-700">Erro: '+(e.message||e)+'</div>'
+    })
+    .getClaudeInsights(context)
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function el(id)     { return document.getElementById(id) }
+function show(id)   { el(id).classList.remove('hidden') }
+function hide(id)   { el(id).classList.add('hidden') }
+
+function kpi(val, label, sub, color) {
+  return '<div style="background:#fff;border:0.5px solid rgba(0,0,0,0.08);border-radius:10px;padding:16px 18px">' +
+    '<div style="font-size:26px;font-weight:600;letter-spacing:-.02em" class="'+(color||'text-gray-900')+'">'+val+'</div>' +
+    '<div style="font-size:11px;color:#6b6a65;margin-top:3px">'+label+'</div>' +
+    '<div style="font-size:10px;margin-top:4px;font-family:monospace;color:#9b9a95">'+sub+'</div>' +
+  '</div>'
+}
+
+function fbtn(label, active, onclick) {
+  return '<button onclick="'+onclick+'" style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid '+(active?'rgba(0,0,0,0.2)':'rgba(0,0,0,0.12)')+';background:'+(active?'#f0efe9':'transparent')+';color:'+(active?'#1a1916':'#6b6a65')+';font-weight:'+(active?'500':'400')+';cursor:pointer">'+label+'</button>'
+}
+
+function healthRing(val, color) {
+  var r = 18, cx = 22, cy = 22
+  var circ = 2 * Math.PI * r
+  var dash = Math.round((val / 100) * circ)
+  return '<svg width="44" height="44" viewBox="0 0 44 44" style="flex-shrink:0">' +
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#e8e7e2" stroke-width="4"/>' +
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-dasharray="'+dash+' '+circ+'" stroke-dashoffset="'+(circ/4)+'" stroke-linecap="round"/>' +
+    '<text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="600" fill="'+color+'" font-family="DM Sans,sans-serif">'+(val>=90?'OK':val+'%')+'</text>' +
+  '</svg>'
+}
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.nav-item').forEach(function(b) { b.classList.remove('active') })
+  document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active') })
+  btn.classList.add('active')
+  document.getElementById('tab-'+id).classList.add('active')
+  document.getElementById('page-title').textContent = {
+    overview:'Visão Geral', stack:'Stack Completo', adoption:'Adoption Rate',
+    bugs:'Bugs & Health', insights:'Insights Claude'
+  }[id]
+}
+</script>
+</body>
+</html>
