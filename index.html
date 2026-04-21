@@ -3,699 +3,868 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TA Governance Dashboard</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<title>Passeios Brasil — MVP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'DM Sans', sans-serif; background: #f7f6f3; }
-  .mono { font-family: 'DM Mono', monospace; }
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
-  .nav-item { display:flex; align-items:center; gap:9px; padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12.5px; border:none; background:none; width:100%; text-align:left; color:#6b6a65; transition:all .15s; }
-  .nav-item:hover { background:#f0efe9; color:#1a1916; }
-  .nav-item.active { background:#EEEDFE; color:#3C3489; font-weight:500; }
-  .section { display:none; }
-  .section.active { display:block; }
-  .spin { animation: spin 1s linear infinite; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green-deep: #1B4332;
+    --green-mid: #2D6A4F;
+    --green-light: #52B788;
+    --green-pale: #B7E4C7;
+    --green-mist: #D8F3DC;
+    --sand: #F9F5EE;
+    --sand-dark: #EDE9E0;
+    --text: #1A1A1A;
+    --text-muted: #6B6B5E;
+    --text-faint: #A8A89A;
+    --border: rgba(0,0,0,0.1);
+    --white: #FFFFFF;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--sand);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--green-deep);
+    padding: 0 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  .nav-logo {
+    font-family: 'Fraunces', serif;
+    font-size: 18px; color: var(--green-mist);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    padding: 6px 14px; border-radius: 20px; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; color: var(--green-pale); background: transparent;
+    transition: all .2s;
+  }
+  .nav-tab.active { background: var(--green-mid); color: var(--green-mist); }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── HERO (TURISTA) ── */
+  .hero {
+    background: var(--green-deep);
+    padding: 40px 20px 60px;
+    text-align: center;
+  }
+  .hero-eyebrow {
+    font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--green-light); margin-bottom: 10px;
+  }
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(26px, 6vw, 38px);
+    color: var(--green-mist); line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  .hero h1 em { font-style: italic; color: var(--green-pale); }
+  .hero p { font-size: 14px; color: var(--green-pale); max-width: 320px; margin: 0 auto 28px; line-height: 1.6; }
+
+  .search-pill {
+    background: var(--white);
+    border-radius: 40px;
+    padding: 6px 6px 6px 18px;
+    display: flex; align-items: center; gap: 8px;
+    max-width: 360px; margin: 0 auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
+  .search-pill input {
+    flex: 1; border: none; outline: none;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
+    background: transparent;
+  }
+  .search-pill button {
+    background: var(--green-deep); color: var(--green-mist);
+    border: none; border-radius: 30px; padding: 9px 18px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* ── FILTER CHIPS ── */
+  .filters {
+    display: flex; gap: 8px; overflow-x: auto;
+    padding: 16px 20px 0; scrollbar-width: none;
+  }
+  .filter-chip {
+    padding: 6px 14px; border-radius: 20px; white-space: nowrap;
+    border: 1px solid var(--border); background: var(--white);
+    font-size: 12px; font-weight: 500; cursor: pointer; color: var(--text-muted);
+    transition: all .15s;
+  }
+  .filter-chip.active { background: var(--green-deep); color: var(--green-mist); border-color: var(--green-deep); }
+
+  /* ── LISTING GRID ── */
+  .listing-section { padding: 20px; }
+  .section-label {
+    font-size: 10px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--text-faint); margin-bottom: 14px;
+  }
+  .cards-grid { display: flex; flex-direction: column; gap: 14px; }
+
+  .pcard {
+    background: var(--white); border-radius: var(--radius);
+    border: 1px solid var(--border); overflow: hidden;
+    cursor: pointer; transition: transform .15s;
+  }
+  .pcard:hover { transform: translateY(-2px); }
+  .pcard-top {
+    height: 100px; display: flex; align-items: center; justify-content: center;
+    font-size: 44px; position: relative;
+  }
+  .pcard-badge {
+    position: absolute; top: 10px; right: 10px;
+    background: var(--white); border-radius: 20px;
+    padding: 3px 9px; font-size: 11px; font-weight: 500; color: var(--green-deep);
+  }
+  .pcard-promo {
+    position: absolute; top: 10px; left: 10px;
+    background: var(--green-pale); border-radius: 20px;
+    padding: 3px 9px; font-size: 10px; font-weight: 500; color: var(--green-deep);
+  }
+  .pcard-body { padding: 14px 16px; }
+  .pcard-body h3 { font-size: 15px; font-weight: 500; margin-bottom: 4px; color: var(--text); }
+  .pcard-meta {
+    font-size: 11px; color: var(--text-muted); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pcard-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-faint); }
+  .pcard-foot { display: flex; justify-content: space-between; align-items: center; }
+  .pcard-price { font-size: 16px; font-weight: 500; }
+  .pcard-price small { font-size: 10px; color: var(--text-faint); font-weight: 400; }
+  .btn-contact {
+    background: var(--green-deep); color: var(--green-mist);
+    border: none; border-radius: var(--radius-sm);
+    padding: 7px 14px; font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    text-decoration: none; display: inline-block;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    text-align: center; padding: 48px 20px;
+    color: var(--text-faint);
+  }
+  .empty .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty p { font-size: 13px; line-height: 1.6; }
+
+  /* ── DETAIL MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 200;
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--sand); border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 480px; max-height: 88vh;
+    overflow-y: auto; padding: 0 0 40px;
+  }
+  .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
+  .modal-hero {
+    background: var(--green-deep); padding: 20px 20px 24px;
+    margin: 12px 0 0;
+  }
+  .modal-hero .eyebrow { font-size: 10px; color: var(--green-light); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+  .modal-hero h2 { font-family: 'Fraunces', serif; font-size: 20px; color: var(--green-mist); margin-bottom: 4px; }
+  .modal-hero p { font-size: 12px; color: var(--green-pale); }
+  .modal-body { padding: 16px 20px 0; }
+  .guide-row {
+    background: var(--white); border-radius: var(--radius-sm);
+    padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+  }
+  .guide-av {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--green-pale); display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: var(--green-deep); font-weight: 600; flex-shrink: 0;
+    font-family: 'Fraunces', serif;
+  }
+  .guide-name { font-size: 14px; font-weight: 500; }
+  .guide-sub { font-size: 11px; color: var(--text-muted); }
+  .stars { font-size: 11px; color: #B45309; }
+  .info-list { margin-bottom: 16px; }
+  .info-item {
+    display: flex; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .info-item .lbl { color: var(--text-muted); }
+  .info-item .val { font-weight: 500; }
+  .offer-box {
+    background: #EAF3DE; border-radius: var(--radius-sm);
+    padding: 12px 14px; margin-bottom: 16px;
+    border-left: 3px solid var(--green-mid);
+  }
+  .offer-box strong { font-size: 12px; color: var(--green-deep); display: block; margin-bottom: 3px; }
+  .offer-box p { font-size: 11px; color: #27500A; }
+  .ai-desc {
+    background: var(--white); border-radius: var(--radius-sm);
+    padding: 14px; margin-bottom: 16px; font-size: 13px; line-height: 1.6; color: var(--text-muted);
+    min-height: 60px;
+  }
+  .ai-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-faint); margin-bottom: 6px; }
+  .modal-cta { display: flex; gap: 10px; }
+  .btn-wpp {
+    flex: 1; padding: 12px; border: none; border-radius: var(--radius-sm);
+    background: #25D366; color: white; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500; cursor: pointer; text-align: center;
+  }
+  .btn-close-modal {
+    padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: transparent; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; cursor: pointer; color: var(--text-muted);
+  }
+
+  /* ── PROVIDER VIEW ── */
+  .prov-wrap { padding: 0 0 60px; }
+  .prov-hero {
+    background: var(--green-deep); padding: 28px 20px 32px;
+  }
+  .prov-hero .eyebrow { font-size: 10px; color: var(--green-light); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+  .prov-hero h2 { font-family: 'Fraunces', serif; font-size: 22px; color: var(--green-mist); margin-bottom: 6px; }
+  .prov-hero p { font-size: 12px; color: var(--green-pale); line-height: 1.6; }
+
+  /* steps */
+  .steps { display: flex; gap: 0; overflow-x: auto; padding: 16px 20px; scrollbar-width: none; }
+  .step {
+    flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-faint);
+  }
+  .step.done .step-num { background: var(--green-light); color: white; }
+  .step.active .step-num { background: var(--green-deep); color: white; }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--sand-dark);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 500; flex-shrink: 0;
+  }
+  .step-line { width: 24px; height: 1px; background: var(--border); flex-shrink: 0; }
+
+  /* form */
+  .form-wrap { padding: 0 20px; }
+  .form-card {
+    background: var(--white); border-radius: var(--radius);
+    border: 1px solid var(--border); padding: 18px; margin-bottom: 14px;
+  }
+  .form-card h4 {
+    font-size: 11px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--text-faint); margin-bottom: 14px;
+  }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
+    font-size: 13px; background: var(--sand); color: var(--text); outline: none;
+    transition: border-color .2s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--green-mid); }
+  .field textarea { height: 80px; resize: none; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* passeios list */
+  .passeio-item {
+    background: var(--sand); border-radius: var(--radius-sm);
+    padding: 10px 12px; margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .pi-name { font-size: 13px; font-weight: 500; }
+  .pi-sub { font-size: 10px; color: var(--text-faint); }
+  .pi-price { font-size: 12px; color: var(--green-mid); font-weight: 500; }
+  .pi-del {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-faint); font-size: 16px; padding: 0 4px; line-height: 1;
+  }
+
+  /* add passeio mini-form */
+  .add-passeio-form {
+    background: var(--sand); border-radius: var(--radius-sm);
+    padding: 12px; margin-top: 8px; display: none;
+  }
+  .add-passeio-form.open { display: block; }
+
+  .btn-add {
+    width: 100%; padding: 10px; border: 1px dashed var(--border);
+    border-radius: var(--radius-sm); background: transparent; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--text-muted);
+  }
+
+  /* promos */
+  .promo-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .promo-row:last-child { border-bottom: none; }
+  .promo-row p { font-size: 13px; font-weight: 500; }
+  .promo-row small { font-size: 11px; color: var(--text-muted); display: block; }
+  .toggle {
+    width: 42px; height: 24px; border-radius: 12px;
+    background: var(--sand-dark); position: relative; cursor: pointer;
+    transition: background .2s; flex-shrink: 0;
+  }
+  .toggle.on { background: var(--green-mid); }
+  .toggle::after {
+    content: ''; position: absolute; width: 18px; height: 18px;
+    background: white; border-radius: 50%; top: 3px; left: 3px; transition: left .2s;
+  }
+  .toggle.on::after { left: 21px; }
+
+  /* submit */
+  .btn-submit {
+    width: 100%; padding: 14px; border: none; border-radius: var(--radius);
+    background: var(--green-deep); color: var(--green-mist);
+    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+    cursor: pointer; transition: opacity .2s;
+  }
+  .btn-submit:hover { opacity: .9; }
+  .btn-submit:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* success */
+  .success-screen {
+    display: none; text-align: center; padding: 48px 24px;
+  }
+  .success-screen.show { display: block; }
+  .success-icon { font-size: 52px; margin-bottom: 16px; }
+  .success-screen h3 { font-family: 'Fraunces', serif; font-size: 22px; margin-bottom: 8px; }
+  .success-screen p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+  .success-link {
+    display: inline-block; margin-top: 20px; padding: 12px 24px;
+    background: var(--green-deep); color: var(--green-mist); border-radius: 30px;
+    font-size: 13px; font-weight: 500; cursor: pointer; border: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* AI generating */
+  .ai-generating {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text-faint);
+  }
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid var(--green-pale);
+    border-top-color: var(--green-mid); border-radius: 50%;
+    animation: spin .7s linear infinite; flex-shrink: 0;
+  }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .badge { display:inline-block; font-size:10px; font-weight:500; padding:2px 8px; border-radius:20px; white-space:nowrap; }
-  .b-active   { background:#EAF3DE; color:#3B6D11; }
-  .b-migrating{ background:#EEEDFE; color:#3C3489; }
-  .b-legacy   { background:#FAEEDA; color:#854F0B; }
-  .b-sunset   { background:#FCEBEB; color:#A32D2D; }
-  .b-open     { background:#FCEBEB; color:#A32D2D; }
-  .b-progress { background:#FAEEDA; color:#854F0B; }
-  .b-done     { background:#EAF3DE; color:#3B6D11; }
-  .b-canceled { background:#F1EFE8; color:#5F5E5A; }
-  .b-bug      { background:#FCEBEB; color:#A32D2D; }
-  .b-story    { background:#EEEDFE; color:#3C3489; }
-  .detail-row { display:none; }
-  .detail-row.open { display:table-row; }
-  .bar-bg { position:relative; height:5px; background:#e8e7e2; border-radius:3px; overflow:hidden; }
-  .bar-fill { position:absolute; inset-y-0; left:0; height:100%; border-radius:3px; transition:width .4s; }
-  .tool-card { background:#fff; border:0.5px solid rgba(0,0,0,0.08); border-radius:12px; padding:14px; cursor:pointer; transition:border-color .15s; }
-  .tool-card:hover { border-color:rgba(0,0,0,0.15); }
-  .tool-card.expanded { border-color:#7F77DD; }
-  .insight-card { background:#fff; border:0.5px solid rgba(0,0,0,0.08); border-radius:10px; padding:12px 14px; border-left-width:3px; margin-bottom:8px; }
+
+  /* loading overlay */
+  .loading-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(27,67,50,.8); z-index: 300;
+    align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+  }
+  .loading-overlay.show { display: flex; }
+  .loading-overlay p { color: var(--green-mist); font-size: 14px; }
+  .big-spinner {
+    width: 40px; height: 40px; border: 3px solid rgba(255,255,255,.2);
+    border-top-color: var(--green-pale); border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
 </style>
 </head>
 <body>
-<div class="flex min-h-screen">
 
-  <!-- Sidebar -->
-  <aside class="w-56 flex-shrink-0 bg-white border-r border-black/8 fixed inset-y-0 left-0 flex flex-col z-10">
-    <div class="px-5 py-6 border-b border-black/8">
-      <div class="text-[13px] font-semibold tracking-tight">TA Governance</div>
-      <div class="text-[11px] text-gray-400 mt-0.5 mono">Stack Dashboard · Nubank</div>
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">🌊 Passeios Brasil</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('turista')">Turistas</button>
+    <button class="nav-tab" onclick="showView('prestador')">Prestadores</button>
+  </div>
+</nav>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading">
+  <div class="big-spinner"></div>
+  <p id="loading-msg">Salvando seu cadastro...</p>
+</div>
+
+<!-- MODAL DETALHE -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-hero">
+      <div class="eyebrow" id="m-cat"></div>
+      <h2 id="m-title"></h2>
+      <p id="m-loc"></p>
     </div>
-    <nav class="flex-1 px-3 py-4 space-y-0.5">
-      <div class="text-[10px] font-medium text-gray-400 uppercase tracking-wider px-2 mb-2">Navegação</div>
-      <button class="nav-item active" onclick="switchTab('overview',this)">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/></svg>
-        Visão Geral
-      </button>
-      <button class="nav-item" onclick="switchTab('stack',this)">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="2.5" rx="1" fill="currentColor"/><rect x="1" y="7" width="14" height="2.5" rx="1" fill="currentColor" opacity=".6"/><rect x="1" y="11" width="14" height="2.5" rx="1" fill="currentColor" opacity=".3"/></svg>
-        Stack Completo
-      </button>
-      <button class="nav-item" onclick="switchTab('adoption',this)">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 8L8 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 8L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Adoption Rate
-      </button>
-      <button class="nav-item" onclick="switchTab('bugs',this)">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="9" r="5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M6 4.5Q8 3 10 4.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/><line x1="8" y1="7" x2="8" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="6" y1="9" x2="10" y2="9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-        Bugs & Health
-      </button>
-      <button class="nav-item" onclick="switchTab('insights',this)">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 0 1 4 4c0 1.5-.8 2.8-2 3.5V11a2 2 0 0 1-4 0V9.5A4 4 0 0 1 8 2Z" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="6.5" y1="13" x2="9.5" y2="13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-        Insights Claude
-      </button>
-    </nav>
-    <div class="px-5 py-4 border-t border-black/8">
-      <div class="text-[10px] text-gray-400 mono leading-relaxed">Abr/2026 · TA Ops<br>Revisão mensal</div>
-      <div class="flex items-center gap-1.5 mt-2" id="claude-badge" style="display:none!important">
-        <div class="w-1.5 h-1.5 rounded-full bg-green-400"></div>
-        <span class="text-[10px] text-gray-400 mono">Claude claude-sonnet-4-6</span>
+    <div class="modal-body">
+      <div class="guide-row">
+        <div class="guide-av" id="m-av"></div>
+        <div>
+          <div class="guide-name" id="m-name"></div>
+          <div class="guide-sub" id="m-stats"></div>
+          <div class="stars" id="m-stars"></div>
+        </div>
       </div>
-    </div>
-  </aside>
-
-  <!-- Main -->
-  <main class="ml-56 flex-1 p-8" style="max-width:calc(100vw - 224px)">
-    <div class="flex items-center justify-between mb-7">
-      <h1 class="text-xl font-semibold tracking-tight" id="page-title">Visão Geral</h1>
-      <div class="flex items-center gap-3">
-        <span class="text-[11px] text-gray-400 mono" id="last-updated">—</span>
-        <button onclick="refreshData()" id="refresh-btn"
-          class="text-[11px] px-3 py-1.5 rounded-md border border-black/15 text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-1.5">
-          <svg id="refresh-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M10 6A4 4 0 1 1 6 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-            <path d="M10 2v4H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          </svg>
-          Atualizar
-        </button>
+      <div class="info-list" id="m-info"></div>
+      <div class="offer-box" id="m-offer" style="display:none">
+        <strong>Oferta especial</strong>
+        <p id="m-offer-text"></p>
+      </div>
+      <div class="ai-label">Sobre este passeio</div>
+      <div class="ai-desc" id="m-ai-desc">
+        <div class="ai-generating"><div class="spinner"></div> Gerando descrição...</div>
+      </div>
+      <div class="modal-cta">
+        <a class="btn-wpp" id="m-wpp" href="#" target="_blank">Contatar no WhatsApp</a>
+        <button class="btn-close-modal" onclick="closeModal()">Fechar</button>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- Loading -->
-    <div id="loading" class="flex flex-col items-center justify-center py-24 gap-4">
-      <div class="w-8 h-8 border-2 border-purple-200 border-t-purple-500 rounded-full spin"></div>
-      <span class="text-[12px] text-gray-400">Buscando dados do Jira e Visier...</span>
+<!-- ════ VIEW: TURISTA ════ -->
+<div class="view active" id="view-turista">
+  <div class="hero">
+    <div class="hero-eyebrow">Turismo local · direto com quem faz</div>
+    <h1>Encontre passeios <em>autênticos</em> pelo Brasil</h1>
+    <p>Converse e negocie diretamente com o barqueiro, guia ou aventureiro local.</p>
+    <div class="search-pill">
+      <input type="text" id="search-input" placeholder="Cidade, estado ou tipo de passeio..." oninput="filterListings()">
+      <button onclick="filterListings()">Buscar</button>
+    </div>
+  </div>
+
+  <div class="filters" id="filters">
+    <div class="filter-chip active" onclick="setFilter('Todos', this)">Todos</div>
+    <div class="filter-chip" onclick="setFilter('Barco', this)">🚣 Barco</div>
+    <div class="filter-chip" onclick="setFilter('Mergulho', this)">🤿 Mergulho</div>
+    <div class="filter-chip" onclick="setFilter('Trilha', this)">🥾 Trilha</div>
+    <div class="filter-chip" onclick="setFilter('Cultura', this)">🎭 Cultura</div>
+    <div class="filter-chip" onclick="setFilter('Pesca', this)">🎣 Pesca</div>
+  </div>
+
+  <div class="listing-section">
+    <div class="section-label" id="result-count"></div>
+    <div class="cards-grid" id="cards-grid"></div>
+    <div class="empty" id="empty-state" style="display:none">
+      <div class="empty-icon">🗺️</div>
+      <p>Nenhum passeio encontrado com esses critérios.<br>Tente outra localidade ou categoria.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════ VIEW: PRESTADOR ════ -->
+<div class="view" id="view-prestador">
+  <div class="prov-wrap">
+    <div class="prov-hero">
+      <div class="eyebrow">Para prestadores de turismo</div>
+      <h2>Cadastre seus passeios</h2>
+      <p>Apareça para turistas de todo o Brasil. Gratuito para validar — sem comissão por enquanto.</p>
     </div>
 
-    <!-- Error -->
-    <div id="error-box" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-[12px] text-red-700 mb-4"></div>
+    <!-- steps -->
+    <div class="steps">
+      <div class="step active" id="step1"><div class="step-num">1</div> Seus dados</div>
+      <div class="step-line"></div>
+      <div class="step" id="step2"><div class="step-num">2</div> Passeios</div>
+      <div class="step-line"></div>
+      <div class="step" id="step3"><div class="step-num">3</div> Promoções</div>
+    </div>
 
-    <!-- Content -->
-    <div id="content" class="hidden">
-
-      <!-- ── VISÃO GERAL ── -->
-      <div id="tab-overview" class="section active">
-        <div class="grid grid-cols-4 gap-3 mb-6" id="kpi-overview"></div>
-        <div class="bg-white border border-black/8 rounded-xl overflow-hidden mb-4">
-          <div class="bg-gray-50 border-b border-black/8 px-4 py-2 flex justify-between">
-            <span class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Calendário de renovações</span>
-            <span class="text-[10px] text-gray-400 mono">Abr – Set 2026</span>
+    <div class="form-wrap" id="form-main">
+      <!-- STEP 1 -->
+      <div id="passo1">
+        <div class="form-card">
+          <h4>Seus dados</h4>
+          <div class="field"><label>Nome completo</label><input type="text" id="p-nome" placeholder="Raimundo Barros"></div>
+          <div class="field"><label>WhatsApp (com DDD)</label><input type="tel" id="p-wpp" placeholder="82 99999-0000"></div>
+          <div class="field-row">
+            <div class="field"><label>Cidade</label><input type="text" id="p-cidade" placeholder="São Miguel dos Milagres"></div>
+            <div class="field"><label>Estado</label>
+              <select id="p-estado">
+                <option value="">UF</option>
+                <option>AL</option><option>AM</option><option>BA</option><option>CE</option>
+                <option>ES</option><option>GO</option><option>MA</option><option>MT</option>
+                <option>MS</option><option>MG</option><option>PA</option><option>PB</option>
+                <option>PE</option><option>PI</option><option>PR</option><option>RJ</option>
+                <option>RN</option><option>RS</option><option>RO</option><option>RR</option>
+                <option>SC</option><option>SP</option><option>SE</option><option>TO</option><option>DF</option>
+              </select>
+            </div>
           </div>
-          <div class="flex p-4" id="renewal-timeline"></div>
+          <div class="field"><label>Anos de experiência</label><input type="number" id="p-anos" placeholder="10" min="0"></div>
         </div>
-        <div class="bg-white border border-black/8 rounded-xl overflow-hidden mb-4">
-          <div class="bg-gray-50 border-b border-black/8 px-4 py-2">
-            <span class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Alertas & ações pendentes</span>
+        <button class="btn-submit" onclick="goStep(2)">Continuar →</button>
+      </div>
+
+      <!-- STEP 2 -->
+      <div id="passo2" style="display:none">
+        <div class="form-card">
+          <h4>Seus passeios</h4>
+          <div id="passeios-list"></div>
+          <div class="add-passeio-form" id="add-form">
+            <div class="field"><label>Nome do passeio</label><input type="text" id="np-nome" placeholder="Passeio de barco — Rota das Piscinas"></div>
+            <div class="field">
+              <label>Categoria</label>
+              <select id="np-cat">
+                <option>Barco</option><option>Mergulho</option><option>Trilha</option>
+                <option>Cultura</option><option>Pesca</option><option>Outro</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>Duração</label><input type="text" id="np-dur" placeholder="4 horas"></div>
+              <div class="field"><label>Grupo máximo</label><input type="number" id="np-grupo" placeholder="8"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>Valor (R$)</label><input type="number" id="np-valor" placeholder="80"></div>
+              <div class="field">
+                <label>Unidade</label>
+                <select id="np-unidade"><option>por pessoa</option><option>por grupo</option></select>
+              </div>
+            </div>
+            <div class="field"><label>O que inclui</label><input type="text" id="np-inclui" placeholder="Snorkel, água, colete"></div>
+            <button class="btn-submit" style="margin-top:8px" onclick="addPasseio()">Salvar passeio</button>
           </div>
-          <div id="actions-table"></div>
+          <button class="btn-add" id="btn-add-passeio" onclick="toggleAddForm()">+ Adicionar passeio</button>
         </div>
-        <div class="flex gap-3 flex-wrap mt-2" id="sources-bar"></div>
+        <button class="btn-submit" onclick="goStep(3)">Continuar →</button>
       </div>
 
-      <!-- ── STACK ── -->
-      <div id="tab-stack" class="section">
-        <div class="flex gap-2 mb-3 flex-wrap text-[11px] text-gray-500 items-center" id="stack-legend"></div>
-        <div class="flex gap-2 mb-3 flex-wrap" id="stack-filters"></div>
-        <div class="bg-white border border-black/8 rounded-xl overflow-hidden">
-          <table class="w-full text-[12px]" style="table-layout:fixed">
-            <thead id="stack-thead"></thead>
-            <tbody id="stack-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ── ADOPTION ── -->
-      <div id="tab-adoption" class="section">
-        <div class="bg-teal-50 border-l-4 rounded-md px-3 py-2 text-[11px] mb-4 flex items-center gap-2"
-          style="background:#E1F5EE;border-color:#1D9E75;color:#085041">
-          <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:#1D9E75"></div>
-          Headcount: <strong class="ml-1">Visier · Abr/2026</strong>
-          <span class="ml-1">· Total org: 10.544 · Elegibilidade estimada</span>
-        </div>
-        <div class="grid grid-cols-4 gap-3 mb-6" id="kpi-adoption"></div>
-        <div class="flex gap-2 mb-4 flex-wrap items-center" id="adoption-filters"></div>
-        <div class="grid grid-cols-3 gap-3" id="adoption-cards"></div>
-      </div>
-
-      <!-- ── BUGS ── -->
-      <div id="tab-bugs" class="section">
-        <div class="bg-purple-50 border-l-4 rounded-md px-3 py-2 text-[11px] mb-4 flex items-center gap-2"
-          style="background:#EEEDFE;border-color:#7F77DD;color:#3C3489">
-          <div class="w-2 h-2 rounded-full flex-shrink-0 bg-purple-400"></div>
-          Dados reais: <strong class="ml-1">TAOPS · Jira</strong>
-          <span class="ml-1" id="bugs-source-status">· carregando...</span>
-        </div>
-        <div class="grid grid-cols-4 gap-3 mb-6" id="kpi-bugs"></div>
-        <div class="flex gap-2 mb-4 flex-wrap items-center" id="bugs-filters"></div>
-        <div class="grid grid-cols-3 gap-3 mb-4" id="bugs-cards"></div>
-        <div class="bg-white border border-black/8 rounded-xl overflow-hidden">
-          <div class="bg-gray-50 border-b border-black/8 px-4 py-2">
-            <span class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Todos os issues · TAOPS Jira</span>
+      <!-- STEP 3 -->
+      <div id="passo3" style="display:none">
+        <div class="form-card">
+          <h4>Ofertas proativas</h4>
+          <div class="promo-row">
+            <div><p>Notificar turistas próximos</p><small>Apareça para quem está na sua região agora</small></div>
+            <div class="toggle on" id="tog1" onclick="this.classList.toggle('on')"></div>
           </div>
-          <table class="w-full text-[12px]" style="table-layout:fixed">
-            <thead><tr class="bg-gray-50 border-b border-black/8 text-[11px] text-gray-400">
-              <th class="px-4 py-2 text-left w-[10%]">Ticket</th>
-              <th class="px-4 py-2 text-left w-[13%]">Ferramenta</th>
-              <th class="px-4 py-2 text-left w-[35%]">Título</th>
-              <th class="px-4 py-2 text-left w-[9%]">Tipo</th>
-              <th class="px-4 py-2 text-left w-[11%]">Status</th>
-              <th class="px-4 py-2 text-left w-[9%]">Prioridade</th>
-              <th class="px-4 py-2 text-left w-[13%]">Atribuído</th>
-            </tr></thead>
-            <tbody id="issues-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ── INSIGHTS CLAUDE ── -->
-      <div id="tab-insights" class="section">
-        <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="flex-shrink-0 mt-0.5"><circle cx="10" cy="10" r="8" fill="#EEEDFE"/><path d="M10 6v4l2.5 2.5" stroke="#7F77DD" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <div>
-            <div class="text-[13px] font-medium text-purple-800 mb-0.5">Insights gerados pelo Claude claude-sonnet-4-6</div>
-            <div class="text-[12px] text-purple-600">Análise do stack atual com foco em custo operacional, licenças ociosas e riscos críticos. Clique em "Gerar insights" para buscar uma análise atualizada.</div>
+          <div class="promo-row">
+            <div><p>Desconto automático para grupos</p><small>Grupos de 4+ recebem oferta diferenciada</small></div>
+            <div class="toggle on" id="tog2" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="promo-row">
+            <div><p>Oferta de última hora</p><small>Se tiver vaga sobrando, avisa os turistas</small></div>
+            <div class="toggle" id="tog3" onclick="this.classList.toggle('on')"></div>
           </div>
         </div>
-        <div class="flex gap-3 mb-6">
-          <button onclick="loadInsights('stack')" class="px-4 py-2 text-[12px] bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            Gerar insights do stack
-          </button>
-          <button onclick="loadInsights('custos')" class="px-4 py-2 text-[12px] border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors">
-            Foco em custos
-          </button>
-          <button onclick="loadInsights('riscos')" class="px-4 py-2 text-[12px] border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors">
-            Foco em riscos
-          </button>
-          <button onclick="loadInsights('renovacoes')" class="px-4 py-2 text-[12px] border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors">
-            Foco em renovações
-          </button>
+        <div class="form-card">
+          <h4>Mensagem de boas-vindas</h4>
+          <div class="field">
+            <label>O que você diria ao primeiro turista?</label>
+            <textarea id="p-msg" placeholder="Olá! Sou o Raimundo, barqueiro há 18 anos em São Miguel dos Milagres. Conheço cada recanto das piscinas naturais..."></textarea>
+          </div>
         </div>
-        <div id="insights-loading" class="hidden flex-col items-center py-10 gap-3">
-          <div class="w-7 h-7 border-2 border-purple-200 border-t-purple-500 rounded-full spin"></div>
-          <span class="text-[12px] text-gray-400">Claude está analisando o stack...</span>
-        </div>
-        <div id="insights-content"></div>
+        <button class="btn-submit" id="btn-finalizar" onclick="finalizar()">Publicar meu perfil ✓</button>
       </div>
+    </div>
 
-    </div><!-- /content -->
-  </main>
+    <!-- SUCCESS -->
+    <div class="success-screen" id="success-screen">
+      <div class="success-icon">🌊</div>
+      <h3>Perfil publicado!</h3>
+      <p>Seus passeios já estão aparecendo para turistas.<br>Veja como ficou:</p>
+      <button class="success-link" onclick="verPerfil()">Ver meu perfil →</button>
+    </div>
+  </div>
 </div>
 
 <script>
-// ── State ────────────────────────────────────────────────────────────
-var D = null  // dashboard data
-var stackFilter   = 'all'
-var adoptFilter   = 'all'
-var adoptSort     = 'pen'
-var bugsFilter    = 'all'
-var bugsSort      = 'open'
-var expandedStack = {}
-var expandedAdopt = {}
-var expandedBugs  = {}
+// ── STATE ──
+let listings = [];
+let currentFilter = 'Todos';
+let currentListing = null;
+let passeiosTemp = [];
+let providerData = {};
 
-var TITLES = {
-  overview: 'Visão geral', stack: 'Stack completo', adoption: 'Adoption rate',
-  owners: 'Responsáveis', bugs: 'Bugs & health', insights: 'Insights Claude'
+// ── SEED DATA (exemplos para turistas verem) ──
+const seedListings = [
+  {
+    id: 's1', nome: 'Raimundo Barros', wpp: '82999990001',
+    cidade: 'São Miguel dos Milagres', estado: 'AL', anos: 18,
+    passeios: [{ nome: 'Rota das Piscinas Naturais', cat: 'Barco', dur: '4 horas', grupo: 8, valor: 80, unidade: 'por pessoa', inclui: 'Snorkel, água, colete salva-vidas' }],
+    promo_grupos: true, promo_proximo: true, promo_ultimahora: false,
+    rating: 4.9, total: 312, emoji: '🚣'
+  },
+  {
+    id: 's2', nome: 'Marina Eco Turismo', wpp: '82999990002',
+    cidade: 'Maragogi', estado: 'AL', anos: 8,
+    passeios: [{ nome: 'Snorkel nas Piscinas', cat: 'Mergulho', dur: '3 horas', grupo: 10, valor: 120, unidade: 'por pessoa', inclui: 'Máscara e snorkel, protetor solar biodegradável' }],
+    promo_grupos: false, promo_proximo: true, promo_ultimahora: true,
+    rating: 4.7, total: 180, emoji: '🤿'
+  },
+  {
+    id: 's3', nome: 'Zé das Dunas', wpp: '82999990003',
+    cidade: 'Maceió', estado: 'AL', anos: 12,
+    passeios: [{ nome: 'Buggy nas Dunas — Pôr do Sol', cat: 'Trilha', dur: '2 horas', grupo: 4, valor: 150, unidade: 'por grupo', inclui: 'Buggy 4x4, guia local, foto incluída' }],
+    promo_grupos: true, promo_proximo: false, promo_ultimahora: true,
+    rating: 4.8, total: 220, emoji: '🏖️'
+  }
+];
+
+listings = [...seedListings];
+
+// ── VIEW SWITCH ──
+function showView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  event.target.classList.add('active');
+  if (v === 'turista') renderListings();
 }
 
-// ── Init ─────────────────────────────────────────────────────────────
-// Apps Script: use google.script.run para chamar funções do servidor.
-// fetch() para a mesma URL sempre retorna o HTML da página, não JSON.
+// ── FILTER ──
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  filterListings();
+}
 
-window.onload = function() { loadData(false) }
+function filterListings() {
+  const q = (document.getElementById('search-input').value || '').toLowerCase();
+  let res = listings.filter(l => {
+    const matchCat = currentFilter === 'Todos' || l.passeios.some(p => p.cat === currentFilter);
+    const matchQ = !q || l.cidade.toLowerCase().includes(q) || l.estado.toLowerCase().includes(q)
+      || l.nome.toLowerCase().includes(q)
+      || l.passeios.some(p => p.nome.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q));
+    return matchCat && matchQ;
+  });
+  renderCards(res);
+}
 
-function loadData(forceRefresh) {
-  show('loading'); hide('content'); hide('error-box')
-  if (forceRefresh) {
-    google.script.run
-      .withSuccessHandler(function() {
-        google.script.run
-          .withSuccessHandler(onDataLoaded)
-          .withFailureHandler(onDataError)
-          .getDashboardData()
+function renderListings() {
+  renderCards(listings);
+}
+
+function renderCards(data) {
+  const grid = document.getElementById('cards-grid');
+  const empty = document.getElementById('empty-state');
+  const count = document.getElementById('result-count');
+  if (!data.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    count.textContent = 'Nenhum resultado';
+    return;
+  }
+  empty.style.display = 'none';
+  count.textContent = data.length + ' passeio' + (data.length > 1 ? 's' : '') + ' encontrado' + (data.length > 1 ? 's' : '');
+  grid.innerHTML = data.map(l => {
+    const p = l.passeios[0];
+    const hasPromo = l.promo_grupos || l.promo_ultimahora;
+    return `<div class="pcard" onclick="openModal('${l.id}')">
+      <div class="pcard-top" style="background:${bgColor(p.cat)}">
+        ${l.emoji || catEmoji(p.cat)}
+        <div class="pcard-badge">⭐ ${l.rating || '4.8'}</div>
+        ${hasPromo ? '<div class="pcard-promo">Oferta especial</div>' : ''}
+      </div>
+      <div class="pcard-body">
+        <h3>${p.nome}</h3>
+        <div class="pcard-meta">
+          <span>${l.nome}</span>
+          <span class="dot"></span>
+          <span>${l.cidade}, ${l.estado}</span>
+        </div>
+        <div class="pcard-foot">
+          <div class="pcard-price">R$ ${p.valor} <small>/ ${p.unidade}</small></div>
+          <button class="btn-contact">Ver passeio</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function bgColor(cat) {
+  const m = { Barco: '#B7E4C7', Mergulho: '#A8D8EA', Trilha: '#D4E6B5', Cultura: '#F5D5B8', Pesca: '#C8E6C9' };
+  return m[cat] || '#D8F3DC';
+}
+function catEmoji(cat) {
+  const m = { Barco: '🚣', Mergulho: '🤿', Trilha: '🥾', Cultura: '🎭', Pesca: '🎣' };
+  return m[cat] || '🌊';
+}
+
+// ── MODAL ──
+async function openModal(id) {
+  const l = listings.find(x => x.id === id);
+  if (!l) return;
+  currentListing = l;
+  const p = l.passeios[0];
+  document.getElementById('m-cat').textContent = `${l.cidade}, ${l.estado} · ${p.cat}`;
+  document.getElementById('m-title').textContent = p.nome;
+  document.getElementById('m-loc').textContent = `${p.dur} · máx. ${p.grupo} pessoas`;
+  const initials = l.nome.split(' ').slice(0,2).map(w=>w[0]).join('');
+  document.getElementById('m-av').textContent = initials;
+  document.getElementById('m-name').textContent = l.nome;
+  document.getElementById('m-stats').textContent = `Guia há ${l.anos} anos · ${l.total || '—'} passeios`;
+  document.getElementById('m-stars').textContent = `★★★★★ ${l.rating || '4.8'}`;
+  document.getElementById('m-info').innerHTML = `
+    <div class="info-item"><span class="lbl">Duração</span><span class="val">${p.dur}</span></div>
+    <div class="info-item"><span class="lbl">Grupo máximo</span><span class="val">${p.grupo} pessoas</span></div>
+    <div class="info-item"><span class="lbl">Inclui</span><span class="val">${p.inclui}</span></div>
+    <div class="info-item"><span class="lbl">Valor</span><span class="val">R$ ${p.valor} ${p.unidade}</span></div>
+  `;
+  if (l.promo_grupos) {
+    document.getElementById('m-offer').style.display = 'block';
+    document.getElementById('m-offer-text').textContent = 'Grupos de 4+ pessoas têm desconto. Pergunte diretamente ao prestador!';
+  } else {
+    document.getElementById('m-offer').style.display = 'none';
+  }
+  const wpp = l.wpp.replace(/\D/g,'');
+  const msg = encodeURIComponent(`Olá ${l.nome.split(' ')[0]}! Vi seu passeio "${p.nome}" no Passeios Brasil. Tenho interesse, podemos conversar?`);
+  document.getElementById('m-wpp').href = `https://wa.me/55${wpp}?text=${msg}`;
+  document.getElementById('modal').classList.add('open');
+  // AI desc
+  document.getElementById('m-ai-desc').innerHTML = '<div class="ai-generating"><div class="spinner"></div> Gerando descrição...</div>';
+  generateDesc(l, p);
+}
+
+function closeModal(e) {
+  if (!e || e.target.id === 'modal' || e.target.classList.contains('btn-close-modal')) {
+    document.getElementById('modal').classList.remove('open');
+  }
+}
+
+async function generateDesc(l, p) {
+  try {
+    const prompt = `Escreva uma descrição curta e atraente (3 frases, máximo 80 palavras) para um passeio turístico no Brasil. 
+Passeio: ${p.nome}
+Local: ${l.cidade}, ${l.estado}
+Duração: ${p.dur}
+Guia: ${l.nome}, ${l.anos} anos de experiência
+Inclui: ${p.inclui}
+Tom: caloroso, autêntico, voltado para turistas que querem experiências locais reais. Sem exageros.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
       })
-      .withFailureHandler(onDataError)
-      .clearCache()
-    return
+    });
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || '';
+    document.getElementById('m-ai-desc').textContent = text;
+  } catch(e) {
+    document.getElementById('m-ai-desc').textContent = 'Uma experiência autêntica com quem conhece cada detalhe do local.';
   }
-  google.script.run
-    .withSuccessHandler(onDataLoaded)
-    .withFailureHandler(onDataError)
-    .getDashboardData()
 }
 
-function onDataLoaded(data) {
-  D = data
-  hide('loading')
-  show('content')
-  renderAll()
-}
-
-function onDataError(e) {
-  hide('loading')
-  el('error-box').textContent = 'Erro ao carregar dados: ' + (e.message || e)
-  show('error-box')
-}
-
-function refreshData() {
-  var icon = el('refresh-icon')
-  icon.classList.add('spin')
-  google.script.run
-    .withSuccessHandler(function() {
-      google.script.run
-        .withSuccessHandler(function(data) { D = data; renderAll(); icon.classList.remove('spin') })
-        .withFailureHandler(function(e) { icon.classList.remove('spin'); alert('Erro: ' + (e.message || e)) })
-        .getDashboardData()
-    })
-    .withFailureHandler(function(e) { icon.classList.remove('spin'); alert('Erro ao limpar cache: ' + (e.message || e)) })
-    .clearCache()
-}
-
-// ── Render all ───────────────────────────────────────────────────────
-function renderAll() {
-  renderOverview()
-  renderStack()
-  renderAdoption()
-  renderBugs()
-  var ts = D.lastUpdated ? new Date(D.lastUpdated).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : '—'
-  el('last-updated').textContent = (D._cached ? 'cache · ' : 'live · ') + ts
-}
-
-// ── Overview ─────────────────────────────────────────────────────────
-function renderOverview() {
-  var tools  = D.stackTools || []
-  var issues = D.jiraIssues || []
-  var soon   = tools.filter(function(t) {
-    if (!t.renewal || t.renewal === '—') return false
-    var m = t.renewal.match(/(\w+)\/(\d{4})/)
-    if (!m) return false
-    var mm = {Jan:0,Fev:1,Mar:2,Abr:3,Mai:4,Jun:5,Jul:6,Ago:7,Set:8,Out:9,Nov:10,Dez:11}
-    var d = new Date(+m[2], mm[m[1]] || 0)
-    var diff = (d - Date.now()) / 86400000
-    return diff > 0 && diff <= 90
-  }).length
-
-  var open = issues.filter(function(i) { return i.statusCat === 'progress' || i.statusCat === 'open' }).length
-
-  el('kpi-overview').innerHTML =
-    kpi(tools.length, 'Ferramentas na stack', '5 ativas · 3 legado/sunset', '') +
-    kpi(soon, 'Renovações < 90 dias', 'GoodTime · LinkedIn · HackerRank', 'text-amber-600') +
-    kpi(tools.filter(function(t){return t.risk==='high'}).length, 'Risco alto', 'Greenhouse (decommission)', 'text-red-600') +
-    kpi(open, 'Issues abertos', 'TAOPS · Jira em tempo real', 'text-purple-600')
-
-  // Timeline
-  var months = ['Abr','Mai','Jun','Jul','Ago','Set']
-  var renewals = {
-    Mai: [['GoodTime','#FAEEDA','#854F0B']],
-    Jun: [['LinkedIn','#FAEEDA','#854F0B']],
-    Jul: [['BrightHire','#EAF3DE','#3B6D11']],
-    Ago: [['HackerRank','#FAEEDA','#854F0B']],
-    Set: [['Ashby','#EAF3DE','#3B6D11'],['CodeSignal','#EAF3DE','#3B6D11']]
+// ── PROVIDER STEPS ──
+function goStep(n) {
+  if (n === 2) {
+    const nome = document.getElementById('p-nome').value.trim();
+    const wpp = document.getElementById('p-wpp').value.trim();
+    const cidade = document.getElementById('p-cidade').value.trim();
+    const estado = document.getElementById('p-estado').value;
+    if (!nome || !wpp || !cidade || !estado) { alert('Preencha todos os campos obrigatórios.'); return; }
+    providerData = { nome, wpp, cidade, estado, anos: document.getElementById('p-anos').value || 0 };
   }
-  el('renewal-timeline').innerHTML = months.map(function(m) {
-    var pills = (renewals[m] || []).map(function(r) {
-      return '<span style="background:'+r[1]+';color:'+r[2]+';font-size:9px;font-weight:500;padding:2px 6px;border-radius:3px;text-align:center;display:block;margin-bottom:2px">'+r[0]+'</span>'
-    }).join('')
-    return '<div style="flex:1"><div style="font-size:10px;color:#9b9a95;text-align:center;margin-bottom:6px;font-family:monospace">'+m+'</div><div style="min-height:24px">'+pills+'</div></div>'
-  }).join('')
-
-  // Actions table
-  var actions = [
-    ['Greenhouse',    'Exportar multi-selects antes do decommission',        'Jhow',          'urgente',  'b-sunset'],
-    ['GoodTime',      'Avaliar redução de licenças antes de Mai/26',          'Jhow',          'médio',    'b-legacy'],
-    ['HackerRank',    'Mapear sobreposição com CodeSignal antes de Ago/26',   'Jhow / Rafael', 'médio',    'b-legacy'],
-    ['LinkedIn Rec.', 'Auditar licenças ativas x utilizadas antes de Jun/26', 'Aline / Marco', 'médio',    'b-legacy'],
-    ['Google Forms',  'Concluir migração D&I e CNPS (TAOPS-848, 849)',        'Jhow',          'em curso', 'b-migrating']
-  ]
-  el('actions-table').innerHTML = '<table class="w-full text-xs" style="table-layout:fixed"><thead><tr class="bg-gray-50 border-b border-black/8 text-gray-400"><th class="px-4 py-2 text-left w-2/12">Ferramenta</th><th class="px-4 py-2 text-left w-5/12">Ação</th><th class="px-4 py-2 text-left w-2/12">Responsável</th><th class="px-4 py-2 text-left w-2/12">Prioridade</th></tr></thead><tbody>' +
-    actions.map(function(a) {
-      return '<tr class="border-b border-black/5 last:border-0"><td class="px-4 py-2.5 font-medium">'+a[0]+'</td><td class="px-4 py-2.5 text-gray-500">'+a[1]+'</td><td class="px-4 py-2.5 text-gray-500">'+a[2]+'</td><td class="px-4 py-2.5"><span class="badge '+a[4]+'">'+a[3]+'</span></td></tr>'
-    }).join('') + '</tbody></table>'
-
-  // Sources
-  el('sources-bar').innerHTML = (D.sources || []).map(function(s) {
-    var dot = s.status === 'live' ? 'bg-green-500' : s.status === 'mock' || s.status === 'snapshot' ? 'bg-amber-400' : 'bg-red-400'
-    return '<div class="flex items-center gap-1.5 text-[10px] text-gray-400 mono"><div class="w-1.5 h-1.5 rounded-full '+dot+'"></div>'+s.name+' <span class="opacity-50">'+s.status+'</span></div>'
-  }).join('')
+  if (n === 3 && passeiosTemp.length === 0) {
+    alert('Adicione pelo menos um passeio antes de continuar.'); return;
+  }
+  document.getElementById('passo1').style.display = n===1?'block':'none';
+  document.getElementById('passo2').style.display = n===2?'block':'none';
+  document.getElementById('passo3').style.display = n===3?'block':'none';
+  document.querySelectorAll('.step').forEach((s,i) => {
+    s.classList.remove('active','done');
+    if (i+1 < n) s.classList.add('done');
+    if (i+1 === n) s.classList.add('active');
+  });
 }
 
-// ── Stack ─────────────────────────────────────────────────────────────
-function renderStack() {
-  var tools = (D.stackTools || []).filter(function(t) {
-    if (stackFilter === 'all')  return true
-    if (stackFilter === 'high') return t.risk === 'high'
-    return t.status === stackFilter
-  })
-
-  el('stack-legend').innerHTML =
-    [['ativa','b-active','Stack definitivo'],['migrando','b-migrating','Em transição'],
-     ['legado','b-legacy','Deprecação prevista'],['sunset','b-sunset','A descomissionar']]
-    .map(function(l) { return '<span class="flex items-center gap-1.5"><span class="badge '+l[1]+'">'+l[0]+'</span>'+l[2]+'</span>' }).join('')
-
-  el('stack-filters').innerHTML =
-    [['all','Todas'],['ativa','Ativas'],['migrando','Migrando'],
-     ['legado','Legado'],['sunset','Sunset'],['high','Risco alto']]
-    .map(function(f) {
-      var active = stackFilter === f[0]
-      return '<button onclick="setStackFilter(\''+f[0]+'\')" class="text-[11px] px-3 py-1 rounded-md border transition-all '+
-        (active ? 'bg-gray-100 text-gray-900 border-gray-300 font-medium' : 'bg-transparent text-gray-500 border-gray-200 hover:bg-gray-50')+'">'+f[1]+'</button>'
-    }).join('')
-
-  var RISK = { low: ['#639922','Baixo'], mid: ['#BA7517','Médio'], high: ['#E24B4A','Alto'] }
-  var STATUS = { ativa:'b-active', migrando:'b-migrating', legado:'b-legacy', sunset:'b-sunset' }
-
-  var rows = tools.map(function(t, idx) {
-    var exp = expandedStack[t.name]
-    var rc  = RISK[t.risk] || ['#888780','—']
-    var row = '<tr class="border-b border-black/5 cursor-pointer hover:bg-gray-50" onclick="toggleStackRow(\''+t.name+'\')">' +
-      '<td class="px-4 py-2.5 font-medium">'+t.name+'</td>' +
-      '<td class="px-4 py-2.5 text-gray-500">'+t.cat+'</td>' +
-      '<td class="px-4 py-2.5"><span class="badge '+(STATUS[t.status]||'')+'">'+t.status+'</span></td>' +
-      '<td class="px-4 py-2.5 text-gray-500">'+t.owner+'</td>' +
-      '<td class="px-4 py-2.5 text-gray-500 text-center">'+t.users+'/'+t.licensed+'</td>' +
-      '<td class="px-4 py-2.5 text-gray-500">'+t.cost+'</td>' +
-      '<td class="px-4 py-2.5 text-gray-500">'+t.renewal+'</td>' +
-      '<td class="px-4 py-2.5"><span style="color:'+rc[0]+';display:flex;align-items:center;gap:5px;font-size:11px"><span style="width:7px;height:7px;border-radius:50%;background:'+rc[0]+';display:inline-block"></span>'+rc[1]+'</span></td>' +
-      '<td class="px-4 py-2.5 text-gray-400 text-[11px] text-center">'+(exp?'▲':'▾')+'</td>' +
-      '</tr>'
-    var detail = exp ? '<tr class="border-b border-black/5"><td colspan="9" style="padding:0"><div style="padding:12px 16px;background:#faf9f7;border-left:3px solid #7F77DD;font-size:12px;color:#6b6a65;line-height:1.6">' +
-      t.notes +
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px">' +
-      '<div><div style="font-size:10px;color:#9b9a95">Dono de contrato</div><div style="font-weight:500;color:#1a1916">'+t.contract+'</div></div>' +
-      '<div><div style="font-size:10px;color:#9b9a95">Licenças</div><div style="font-weight:500;color:#1a1916">'+t.licensed+' contratadas · '+t.users+' ativas</div></div>' +
-      '<div><div style="font-size:10px;color:#9b9a95">Aviso prévio</div><div style="font-weight:500;color:#1a1916">'+t.notice+' dias</div></div>' +
-      '<div><div style="font-size:10px;color:#9b9a95">Deprecation</div><div style="font-weight:500;color:#1a1916">'+t.depTarget+'</div></div>' +
-      '</div></div></td></tr>' : ''
-    return row + detail
-  }).join('')
-
-  el('stack-thead').innerHTML = '<tr class="bg-gray-50 border-b border-black/8 text-[11px] text-gray-400">' +
-    ['Ferramenta|15%','Categoria|12%','Status|11%','Responsável|12%','Usuários|9%','Custo/mês|12%','Renovação|12%','Risco|10%','|7%']
-    .map(function(c){ var p=c.split('|'); return '<th class="px-4 py-2 text-left" style="width:'+p[1]+'">'+p[0]+'</th>' }).join('') + '</tr>'
-  el('stack-tbody').innerHTML = rows
+function toggleAddForm() {
+  const f = document.getElementById('add-form');
+  const btn = document.getElementById('btn-add-passeio');
+  if (f.classList.contains('open')) {
+    f.classList.remove('open');
+    btn.textContent = '+ Adicionar passeio';
+  } else {
+    f.classList.add('open');
+    btn.textContent = '— Cancelar';
+  }
 }
 
-function setStackFilter(f) { stackFilter = f; renderStack() }
-function toggleStackRow(name) { expandedStack[name] = !expandedStack[name]; renderStack() }
-
-// ── Adoption ──────────────────────────────────────────────────────────
-function renderAdoption() {
-  var tools = D.adoptionData || []
-
-  function p(a, b) { return b > 0 ? Math.round(a * 100 / b) : 0 }
-  function c(v) { return v >= 80 ? '#639922' : v >= 60 ? '#BA7517' : '#E24B4A' }
-  function l(v) { return v >= 80 ? 'Alta' : v >= 60 ? 'Média' : 'Baixa' }
-  function bc(v) { return v >= 80 ? 'b-active' : v >= 60 ? 'b-legacy' : 'b-sunset' }
-
-  var enriched = tools.map(function(t) {
-    return Object.assign({}, t, {
-      penPct: p(t.active, t.eligibleOrg),
-      licPct: t.licensed > 0 ? p(t.active, t.licensed) : null,
-      gap: t.eligibleOrg - t.active,
-      waste: t.licensed - t.active
-    })
-  })
-
-  var m   = enriched.filter(function(t) { return t.eligibleOrg > 0 })
-  var avg = m.length ? Math.round(m.reduce(function(s,t){return s+t.penPct},0)/m.length) : 0
-  var lm  = enriched.filter(function(t){ return t.licensed > 0 })
-  var al  = lm.length ? Math.round(lm.reduce(function(s,t){return s+(t.licPct||0)},0)/lm.length) : 0
-  var mg  = Math.max.apply(null, enriched.map(function(t){return t.gap}))
-  var tw  = enriched.reduce(function(s,t){return s+Math.max(0,t.waste)},0)
-
-  el('kpi-adoption').innerHTML =
-    kpi(avg+'%','Adoção média na org','Ativos / elegíveis reais','text-purple-600') +
-    kpi(al+'%','Eficiência de licença','Ativos / licenças pagas','text-purple-600') +
-    kpi(mg,'Maior gap de cobertura','Elegíveis sem acesso','text-red-600') +
-    kpi(tw,'Licenças ociosas','Pagas, não utilizadas','text-amber-600')
-
-  el('adoption-filters').innerHTML =
-    [['all','Todas'],['alta','Alta'],['media','Média'],['baixa','Baixa']].map(function(f) {
-      return fbtn(f[1], adoptFilter === f[0], 'setAdoptFilter(\''+f[0]+'\')')
-    }).join('') + '<span class="text-[11px] text-gray-400 ml-2">Ordenar:</span>' +
-    [['pen','Adoção'],['lic','Licença'],['gap','Gap']].map(function(f) {
-      return fbtn(f[1], adoptSort === f[0], 'setAdoptSort(\''+f[0]+'\')')
-    }).join('')
-
-  var list = enriched.filter(function(t) {
-    if (adoptFilter === 'alta')  return t.penPct >= 80
-    if (adoptFilter === 'media') return t.penPct >= 60 && t.penPct < 80
-    if (adoptFilter === 'baixa') return t.penPct < 60
-    return true
-  }).sort(function(a,b) {
-    if (adoptSort === 'pen') return b.penPct - a.penPct
-    if (adoptSort === 'lic') return (b.licPct||0) - (a.licPct||0)
-    return b.gap - a.gap
-  })
-
-  el('adoption-cards').innerHTML = list.map(function(t) {
-    var col = c(t.penPct), lbl = l(t.penPct), bcls = bc(t.penPct)
-    var exp = expandedAdopt[t.name]
-    var ring = healthRing(t.penPct, col)
-
-    var chRows = exp ? (t.chapterData || []).slice(0,6).map(function(ch) {
-      var cp = p(ch.active, ch.eligible), cc = c(cp)
-      var ew = p(ch.eligible, t.eligibleOrg), aw = p(ch.active, t.eligibleOrg)
-      return '<div style="display:grid;grid-template-columns:110px 1fr 50px;gap:6px;align-items:center;margin-bottom:5px">' +
-        '<div style="font-size:11px;color:#6b6a65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ch.ch+'</div>' +
-        '<div style="position:relative;height:10px"><div style="position:absolute;inset:0;background:#e8e7e2;border-radius:3px"></div>' +
-        '<div style="position:absolute;top:2.5px;left:0;height:5px;border-radius:3px;background:'+cc+';opacity:.25;width:'+ew+'%"></div>' +
-        '<div style="position:absolute;top:2.5px;left:0;height:5px;border-radius:3px;background:'+cc+';width:'+aw+'%"></div></div>' +
-        '<div style="font-size:10px;font-weight:500;text-align:right;color:'+cc+'">'+cp+'%</div></div>'
-    }).join('') : ''
-
-    return '<div class="tool-card'+(exp?' expanded':'')+'" onclick="toggleAdoptCard(\''+t.name+'\')">' +
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">' +
-        '<div><div style="font-size:13px;font-weight:500">'+t.name+'</div><div style="font-size:10px;color:#9b9a95;margin-top:2px;font-family:monospace">'+t.cat+'</div></div>' +
-        ring +
-      '</div>' +
-      '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap"><span class="badge '+bcls+'">'+lbl+'</span>' +
-        (t.gap > 0 ? '<span style="font-size:10px;color:#9b9a95">'+t.gap+' elegíveis sem acesso</span>' : '') +
-        (t.waste > 0 ? '<span style="font-size:10px;color:#BA7517">'+t.waste+' lic. ociosa'+(t.waste>1?'s':'')+'</span>' : '') +
-      '</div>' +
-      '<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span style="color:#6b6a65">Adoção na org</span><span style="font-weight:500;color:'+col+'">'+t.active+'/'+t.eligibleOrg+' ('+t.penPct+'%)</span></div><div class="bar-bg"><div class="bar-fill" style="background:'+col+';width:'+t.penPct+'%"></div></div></div>' +
-      (t.licPct !== null ? '<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span style="color:#6b6a65">Eficiência de licença</span><span style="font-weight:500;color:'+c(t.licPct)+'">'+t.active+'/'+t.licensed+' ('+t.licPct+'%)</span></div><div class="bar-bg"><div class="bar-fill" style="background:'+c(t.licPct)+';width:'+t.licPct+'%"></div></div></div>' : '') +
-      '<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:#6b6a65">Logins 30d</span><span style="font-weight:500">'+t.logins30d+' usuários</span></div>' +
-      (exp ? '<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid rgba(0,0,0,0.07)"><div style="font-size:10px;font-weight:500;color:#9b9a95;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Por chapter · Visier</div>'+chRows+'</div>' : '') +
-      '<div style="font-size:10px;color:#7F77DD;text-align:center;margin-top:8px">'+(exp?'▲ fechar':'▼ ver por chapter')+'</div>' +
-    '</div>'
-  }).join('')
+function addPasseio() {
+  const nome = document.getElementById('np-nome').value.trim();
+  const valor = document.getElementById('np-valor').value;
+  if (!nome || !valor) { alert('Preencha nome e valor do passeio.'); return; }
+  const p = {
+    nome, cat: document.getElementById('np-cat').value,
+    dur: document.getElementById('np-dur').value || 'A combinar',
+    grupo: document.getElementById('np-grupo').value || 10,
+    valor: parseFloat(valor), unidade: document.getElementById('np-unidade').value,
+    inclui: document.getElementById('np-inclui').value || 'A combinar'
+  };
+  passeiosTemp.push(p);
+  renderPasseiosList();
+  document.getElementById('add-form').classList.remove('open');
+  document.getElementById('btn-add-passeio').textContent = '+ Adicionar passeio';
+  ['np-nome','np-dur','np-grupo','np-valor','np-inclui'].forEach(id => document.getElementById(id).value = '');
 }
 
-function setAdoptFilter(f) { adoptFilter = f; renderAdoption() }
-function setAdoptSort(s)   { adoptSort   = s; renderAdoption() }
-function toggleAdoptCard(n){ expandedAdopt[n] = !expandedAdopt[n]; renderAdoption() }
-
-// ── Owners ────────────────────────────────────────────────────────────
-function renderOwners() {
-  var members = D.teamMembers || []
-  el('owners-grid').innerHTML = members.map(function(m) {
-    var ini = m.name.split(' ').slice(0,2).map(function(w){return w[0]}).join('').toUpperCase()
-    return '<div style="background:#f0efe9;border-radius:8px;padding:12px 14px">' +
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
-        '<div style="width:32px;height:32px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#3C3489;flex-shrink:0">'+ini+'</div>' +
-        '<div><div style="font-size:12px;font-weight:500">'+m.name+'</div><div style="font-size:10px;color:#9b9a95;font-family:monospace">'+m.role+' · '+m.scope+'</div></div>' +
-      '</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:4px">'+m.tools.map(function(t){ return '<span style="font-size:9px;background:#fff;border:0.5px solid rgba(0,0,0,0.08);border-radius:3px;padding:2px 6px;color:#6b6a65">'+t+'</span>' }).join('')+'</div>' +
-    '</div>'
-  }).join('')
-
-  el('owners-tbody').innerHTML = members.map(function(m) {
-    return '<tr class="border-b border-black/5 last:border-0">' +
-      '<td class="px-4 py-2.5 font-medium">'+m.name.split(' ')[0]+'</td>' +
-      '<td class="px-4 py-2.5 text-gray-400 mono text-[11px]">'+m.role+'</td>' +
-      '<td class="px-4 py-2.5">'+m.tools.map(function(t){ return '<span class="badge b-active" style="margin:1px 2px">'+t+'</span>' }).join('')+'</td>' +
-      '<td class="px-4 py-2.5 text-gray-500 text-[11px]">'+m.scope+'</td>' +
-    '</tr>'
-  }).join('')
+function renderPasseiosList() {
+  document.getElementById('passeios-list').innerHTML = passeiosTemp.map((p,i) =>
+    `<div class="passeio-item">
+      <div><div class="pi-name">${p.nome}</div><div class="pi-sub">${p.cat} · ${p.dur}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="pi-price">R$ ${p.valor}/${p.unidade === 'por pessoa' ? 'pax' : 'grupo'}</div>
+        <button class="pi-del" onclick="removePasseio(${i})">×</button>
+      </div>
+    </div>`
+  ).join('');
 }
 
-// ── Bugs ─────────────────────────────────────────────────────────────
-var STACK_NAMES = ['Ashby','Greenhouse','GoodTime','BrightHire','CodeSignal','LinkedIn Rec.','HackerRank','DocuSign','Google Forms']
-
-function renderBugs() {
-  var issues = D.jiraIssues || []
-  var liveSource = (D.sources || []).find(function(s){ return s.name === 'Jira TAOPS' })
-  el('bugs-source-status').textContent = liveSource ? '· ' + liveSource.status + ' · Abr/2026' : '· estimado'
-
-  var toolData = STACK_NAMES.map(function(name) {
-    var ti  = issues.filter(function(i){ return i.tool === name })
-    var op  = ti.filter(function(i){ return i.statusCat === 'open' }).length
-    var pr  = ti.filter(function(i){ return i.statusCat === 'progress' }).length
-    var dn  = ti.filter(function(i){ return i.statusCat === 'done' || i.statusCat === 'canceled' }).length
-    var bg  = ti.filter(function(i){ return i.type === 'Bug' }).length
-    var h   = op>1||pr>2 ? 30 : op===1||pr===1 ? 65 : ti.length>0 ? 85 : 100
-    return { name:name, issues:ti, open:op, progress:pr, done:dn, bugs:bg, total:ti.length, health:h }
-  })
-
-  el('kpi-bugs').innerHTML =
-    kpi(toolData.reduce(function(s,t){return s+t.open},0), 'Issues abertos', 'In Progress / Discovery', 'text-red-600') +
-    kpi(toolData.reduce(function(s,t){return s+t.progress},0), 'Em andamento', 'Discovery / Assigned', 'text-amber-600') +
-    kpi(toolData.reduce(function(s,t){return s+t.done},0), 'Resolvidos (90d)', 'Done ou Canceled', 'text-green-600') +
-    kpi(toolData.reduce(function(s,t){return s+t.bugs},0), 'Bugs formais', 'Issue type = Bug', 'text-purple-600')
-
-  el('bugs-filters').innerHTML =
-    [['all','Todas'],['open','Com issues abertos'],['clean','Sem issues']].map(function(f){
-      return fbtn(f[1], bugsFilter===f[0], 'setBugsFilter(\''+f[0]+'\')')
-    }).join('') + '<span class="text-[11px] text-gray-400 ml-2">Ordenar:</span>' +
-    [['open','Abertos'],['total','Total'],['name','Nome']].map(function(f){
-      return fbtn(f[1], bugsSort===f[0], 'setBugsSort(\''+f[0]+'\')')
-    }).join('')
-
-  var list = toolData.filter(function(t) {
-    if (bugsFilter === 'open')  return t.open > 0 || t.progress > 0
-    if (bugsFilter === 'clean') return t.open === 0 && t.progress === 0
-    return true
-  }).sort(function(a,b) {
-    if (bugsSort === 'open')  return (b.open+b.progress) - (a.open+a.progress)
-    if (bugsSort === 'total') return b.total - a.total
-    return a.name.localeCompare(b.name)
-  })
-
-  var STATUS_LBL = { open:'Aberto', progress:'Em andamento', done:'Resolvido', canceled:'Cancelado' }
-  var STATUS_CLS = { open:'b-open', progress:'b-progress', done:'b-done', canceled:'b-canceled' }
-  var TYPE_CLS   = { Bug:'b-bug', Story:'b-story', Task:'b-active', Request:'b-canceled' }
-
-  el('bugs-cards').innerHTML = list.map(function(t) {
-    var hc  = t.health >= 85 ? '#639922' : t.health >= 60 ? '#BA7517' : '#E24B4A'
-    var hlb = t.health >= 85 ? 'Saudável' : t.health >= 60 ? 'Atenção' : 'Crítico'
-    var exp = expandedBugs[t.name]
-    var ring = healthRing(t.health, hc)
-
-    var rows = t.issues.length === 0
-      ? '<div style="font-size:11px;color:#9b9a95;text-align:center;padding:8px 0">Nenhum issue no TAOPS</div>'
-      : t.issues.map(function(i) {
-          return '<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:0.5px solid rgba(0,0,0,0.06)">' +
-            '<a href="'+i.url+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:#7F77DD;font-family:monospace;white-space:nowrap;min-width:84px;text-decoration:none">'+i.key+'</a>' +
-            '<div style="font-size:11px;flex:1;line-height:1.4">'+i.summary+'</div>' +
-            '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">' +
-              '<span class="badge '+(STATUS_CLS[i.statusCat]||'b-canceled')+'">'+( STATUS_LBL[i.statusCat]||i.status)+'</span>' +
-              '<span class="badge '+(TYPE_CLS[i.type]||'b-canceled')+'">'+i.type+'</span>' +
-            '</div>' +
-          '</div>'
-        }).join('')
-
-    return '<div class="tool-card'+(exp?' expanded':'')+'" onclick="toggleBugCard(\''+t.name+'\')">' +
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">' +
-        '<div><div style="font-size:13px;font-weight:500">'+t.name+'</div><div style="font-size:10px;margin-top:2px;font-weight:500;color:'+hc+'">Health: '+hlb+'</div></div>' +
-        ring +
-      '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">' +
-        '<div style="background:#f0efe9;border-radius:6px;padding:6px 8px;text-align:center"><div style="font-size:16px;font-weight:600;color:#E24B4A">'+(t.open+t.progress)+'</div><div style="font-size:9px;color:#9b9a95;margin-top:1px">Abertos</div></div>' +
-        '<div style="background:#f0efe9;border-radius:6px;padding:6px 8px;text-align:center"><div style="font-size:16px;font-weight:600;color:#639922">'+t.done+'</div><div style="font-size:9px;color:#9b9a95;margin-top:1px">Resolvidos</div></div>' +
-        '<div style="background:#f0efe9;border-radius:6px;padding:6px 8px;text-align:center"><div style="font-size:16px;font-weight:600;color:#A32D2D">'+t.bugs+'</div><div style="font-size:9px;color:#9b9a95;margin-top:1px">Bugs</div></div>' +
-      '</div>' +
-      (exp ? '<div style="padding-top:8px;border-top:0.5px solid rgba(0,0,0,0.07)"><div style="font-size:10px;font-weight:500;color:#9b9a95;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Issues TAOPS</div>'+rows+'</div>' : '') +
-      '<div style="font-size:10px;color:#7F77DD;text-align:center;margin-top:8px">'+(exp?'▲ fechar':'▼ ver issues')+'</div>' +
-    '</div>'
-  }).join('')
-
-  el('issues-tbody').innerHTML = issues.map(function(i) {
-    var pc = i.priority==='High' ? '#A32D2D' : i.priority==='Low' ? '#3B6D11' : '#BA7517'
-    return '<tr class="border-b border-black/5 last:border-0">' +
-      '<td class="px-4 py-2.5"><a href="'+i.url+'" target="_blank" style="color:#7F77DD;font-family:monospace;font-size:11px;text-decoration:none">'+i.key+'</a></td>' +
-      '<td class="px-4 py-2.5 font-medium">'+i.tool+'</td>' +
-      '<td class="px-4 py-2.5 text-gray-500 text-[11px]">'+i.summary+'</td>' +
-      '<td class="px-4 py-2.5"><span class="badge '+(TYPE_CLS[i.type]||'b-canceled')+'">'+i.type+'</span></td>' +
-      '<td class="px-4 py-2.5"><span class="badge '+(STATUS_CLS[i.statusCat]||'b-canceled')+'">'+(STATUS_LBL[i.statusCat]||i.status)+'</span></td>' +
-      '<td class="px-4 py-2.5 text-[11px] font-medium" style="color:'+pc+'">'+i.priority+'</td>' +
-      '<td class="px-4 py-2.5 text-gray-500">'+i.assignee+'</td>' +
-    '</tr>'
-  }).join('')
+function removePasseio(i) {
+  passeiosTemp.splice(i, 1);
+  renderPasseiosList();
 }
 
-function setBugsFilter(f) { bugsFilter = f; renderBugs() }
-function setBugsSort(s)   { bugsSort   = s; renderBugs() }
-function toggleBugCard(n) { expandedBugs[n] = !expandedBugs[n]; renderBugs() }
-
-// ── Claude Insights ───────────────────────────────────────────────────
-function loadInsights(context) {
-  show('insights-loading')
-  el('insights-content').innerHTML = ''
-  google.script.run
-    .withSuccessHandler(function(data) {
-      hide('insights-loading')
-      if (data.error) {
-        el('insights-content').innerHTML = '<div class="bg-red-50 border border-red-200 rounded-xl p-4 text-[12px] text-red-700">'+data.error+'</div>'
-        return
-      }
-      var urgColors = { high: '#E24B4A', mid: '#BA7517', low: '#639922' }
-      el('insights-content').innerHTML = (data.insights || []).map(function(ins) {
-        var uc = urgColors[ins.urgency] || '#888780'
-        return '<div class="insight-card" style="border-left-color:'+uc+'">' +
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
-            '<div style="font-size:12px;font-weight:500">'+ins.title+'</div>' +
-            (ins.tool ? '<span class="badge b-migrating" style="font-size:9px">'+ins.tool+'</span>' : '') +
-            '<span style="font-size:10px;font-weight:500;color:'+uc+';margin-left:auto">'+ins.urgency+'</span>' +
-          '</div>' +
-          '<div style="font-size:12px;color:#6b6a65;line-height:1.6">'+ins.desc+'</div>' +
-        '</div>'
-      }).join('') || '<div class="text-[12px] text-gray-400 text-center py-6">Nenhum insight gerado.</div>'
-      el('claude-badge').style.removeProperty('display')
-    })
-    .withFailureHandler(function(e) {
-      hide('insights-loading')
-      el('insights-content').innerHTML = '<div class="bg-red-50 border border-red-200 rounded-xl p-4 text-[12px] text-red-700">Erro: '+(e.message||e)+'</div>'
-    })
-    .getClaudeInsights(context)
+async function finalizar() {
+  const btn = document.getElementById('btn-finalizar');
+  btn.disabled = true;
+  document.getElementById('loading-msg').textContent = 'Publicando seu perfil...';
+  document.getElementById('loading').classList.add('show');
+  await new Promise(r => setTimeout(r, 1800));
+  // Add to listings
+  const newListing = {
+    id: 'u' + Date.now(),
+    ...providerData,
+    passeios: passeiosTemp,
+    promo_grupos: document.getElementById('tog2').classList.contains('on'),
+    promo_proximo: document.getElementById('tog1').classList.contains('on'),
+    promo_ultimahora: document.getElementById('tog3').classList.contains('on'),
+    rating: null, total: 0,
+    emoji: catEmoji(passeiosTemp[0]?.cat || 'Barco')
+  };
+  listings.push(newListing);
+  document.getElementById('loading').classList.remove('show');
+  document.getElementById('form-main').style.display = 'none';
+  document.getElementById('success-screen').classList.add('show');
+  btn.disabled = false;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────
-function el(id)     { return document.getElementById(id) }
-function show(id)   { el(id).classList.remove('hidden') }
-function hide(id)   { el(id).classList.add('hidden') }
-
-function kpi(val, label, sub, color) {
-  return '<div style="background:#fff;border:0.5px solid rgba(0,0,0,0.08);border-radius:10px;padding:16px 18px">' +
-    '<div style="font-size:26px;font-weight:600;letter-spacing:-.02em" class="'+(color||'text-gray-900')+'">'+val+'</div>' +
-    '<div style="font-size:11px;color:#6b6a65;margin-top:3px">'+label+'</div>' +
-    '<div style="font-size:10px;margin-top:4px;font-family:monospace;color:#9b9a95">'+sub+'</div>' +
-  '</div>'
+function verPerfil() {
+  showView('turista');
+  document.querySelectorAll('.nav-tab')[0].classList.add('active');
+  document.querySelectorAll('.nav-tab')[1].classList.remove('active');
+  setTimeout(() => {
+    const last = listings[listings.length - 1];
+    openModal(last.id);
+  }, 300);
 }
 
-function fbtn(label, active, onclick) {
-  return '<button onclick="'+onclick+'" style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid '+(active?'rgba(0,0,0,0.2)':'rgba(0,0,0,0.12)')+';background:'+(active?'#f0efe9':'transparent')+';color:'+(active?'#1a1916':'#6b6a65')+';font-weight:'+(active?'500':'400')+';cursor:pointer">'+label+'</button>'
-}
-
-function healthRing(val, color) {
-  var r = 18, cx = 22, cy = 22
-  var circ = 2 * Math.PI * r
-  var dash = Math.round((val / 100) * circ)
-  return '<svg width="44" height="44" viewBox="0 0 44 44" style="flex-shrink:0">' +
-    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#e8e7e2" stroke-width="4"/>' +
-    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-dasharray="'+dash+' '+circ+'" stroke-dashoffset="'+(circ/4)+'" stroke-linecap="round"/>' +
-    '<text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="600" fill="'+color+'" font-family="DM Sans,sans-serif">'+(val>=90?'OK':val+'%')+'</text>' +
-  '</svg>'
-}
-
-function switchTab(id, btn) {
-  document.querySelectorAll('.nav-item').forEach(function(b) { b.classList.remove('active') })
-  document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active') })
-  btn.classList.add('active')
-  document.getElementById('tab-'+id).classList.add('active')
-  document.getElementById('page-title').textContent = {
-    overview:'Visão Geral', stack:'Stack Completo', adoption:'Adoption Rate',
-    bugs:'Bugs & Health', insights:'Insights Claude'
-  }[id]
-}
+// init
+renderListings();
 </script>
 </body>
 </html>
